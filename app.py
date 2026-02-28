@@ -1027,18 +1027,40 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
             fig.patch.set_facecolor('none')
             ax.set_facecolor('none')
             
-            ax.scatter(df_komparasi["PCI"], df_komparasi["SDI"], color='#00a4d6', alpha=0.8, edgecolors='black', s=80)
+            # Plot Scatter (Ubah edgecolors jadi putih agar lebih menonjol)
+            ax.scatter(df_komparasi["PCI"], df_komparasi["SDI"], color='#00a4d6', alpha=0.8, edgecolors='white', s=80, zorder=3)
+            
+            # Tambahan Regresi & Korelasi (Jika data lebih dari 1 titik)
+            if len(df_komparasi) > 1:
+                from scipy.stats import pearsonr
+                slope, intercept = np.polyfit(df_komparasi['PCI'], df_komparasi['SDI'], 1)
+                r, p = pearsonr(df_komparasi['PCI'], df_komparasi['SDI'])
+                
+                # Plot Garis Regresi
+                x_vals = np.array(ax.get_xlim())
+                y_vals = intercept + slope * x_vals
+                ax.plot(x_vals, y_vals, '--', color='#2ecc71', alpha=0.8, label=f'Trend (r={r:.2f})')
             
             # Garis batas aman/kritis
             ax.axvline(x=55, color='red', linestyle='--', alpha=0.5, label='Batas Kritis PCI (55)')
             ax.axhline(y=100, color='orange', linestyle='--', alpha=0.5, label='Batas Kritis SDI (100)')
             
-            ax.set_xlabel("Nilai PCI (↑ Semakin Baik)")
-            ax.set_ylabel("Nilai SDI (↓ Semakin Baik)")
+            # ========================================
+            # PERBAIKAN WARNA AXIS & LABEL MENJADI PUTIH
+            # ========================================
+            ax.set_xlabel("Nilai PCI (↑ Semakin Baik)", color='white')
+            ax.set_ylabel("Nilai SDI (↓ Semakin Baik)", color='white')
+            ax.tick_params(colors='white') # Ubah warna angka di sumbu X dan Y
             
-            # Menghapus paksaan teks berwarna putih agar warna menyesuaikan tema Streamlit
-            ax.grid(True, linestyle=':', alpha=0.5)
-            ax.legend(loc="upper right", fontsize=8)
+            for spine in ax.spines.values(): 
+                spine.set_edgecolor('lightgray') # Ubah warna kotak bingkai grafik
+            
+            ax.grid(True, linestyle=':', alpha=0.3, color='lightgray', zorder=0)
+            
+            # Perbaikan warna teks di dalam Legenda
+            legend = ax.legend(loc="upper right", fontsize=8, facecolor='#1e293b', edgecolor='gray')
+            for text in legend.get_texts():
+                text.set_color("white")
             
             st.pyplot(fig)
 
@@ -1048,6 +1070,6 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
             st.dataframe(df_komparasi, use_container_width=True, hide_index=True, height=400)
 
         st.info("💡 **Catatan Analisis:** Segmen yang berada pada **kuadran kiri atas grafik** (Nilai PCI Rendah < 55 & Nilai SDI Tinggi > 100) adalah titik kerusakan struktural dan permukaan paling parah yang harus diprioritaskan dalam RAB pemeliharaan.")
-
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
