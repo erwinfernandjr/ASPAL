@@ -322,12 +322,39 @@ with st.sidebar:
 if menu == "🏠 Beranda":
     st.title("Selamat Datang di Sistem ASPAL")
     st.markdown("""
-    **ASPAL (Analisis Spasial Perkerasan Jalan)** adalah sistem informasi geografis terpadu untuk mengevaluasi kondisi infrastruktur jalan.
-    Silakan pilih modul analisis di panel sebelah kiri:
-    * **Modul PCI:** Menggunakan standar ASTM D6433 untuk evaluasi kerusakan kompleks.
-    * **Modul SDI:** Menggunakan metode Surface Distress Index berbasis retak, lubang, dan alur.
-    * **Komparasi:** Membandingkan hasil kedua indeks untuk menunjang keputusan pemeliharaan.
+    **ASPAL (Analisis Spasial Perkerasan Jalan)** adalah sistem informasi geografis terpadu untuk mengevaluasi kondisi infrastruktur jalan. 
+    Sistem ini menggabungkan dua metode penilaian standar untuk memberikan rekomendasi pemeliharaan yang komprehensif.
     """)
+    
+    st.divider()
+    st.markdown("### 🔍 Parameter Kerusakan yang Dievaluasi")
+    
+    col_b1, col_b2 = st.columns(2)
+    
+    with col_b1:
+        st.info("**1. Pavement Condition Index (PCI) - ASTM D6433**")
+        st.markdown("""
+        Modul ini mengkalkulasi tingkat kerusakan kompleks berdasarkan **19 jenis kerusakan** perkerasan lentur (aspal), yang dikelompokkan menjadi:
+        
+        * **Retak (Cracking):** Retak Kulit Buaya (*Alligator*), Retak Blok, Retak Pinggir (*Edge*), Retak Memanjang & Melintang, Retak Refleksi Sambungan, Retak Selip (*Slippage*).
+        * **Deformasi Permukaan:** Alur (*Rutting*), Keriting (*Corrugation*), Amblesan (*Depression*), Jembulan (*Swell*), Sungkur (*Shoving*), Jembul & Ambles (*Bumps & Sags*).
+        * **Kerusakan Permukaan Dasar:** Lubang (*Potholes*), Kegemukan Aspal (*Bleeding*), Pelepasan Butir (*Raveling*), Pelapukan (*Weathering*), Agregat Licin (*Polished Aggregate*).
+        * **Lain-lain:** Penurunan Bahu Jalan (*Lane/Shoulder Drop-off*), Tambalan (*Patching*), Perlintasan Kereta Api.
+        """)
+        
+    with col_b2:
+        st.success("**2. Surface Distress Index (SDI)**")
+        st.markdown("""
+        Modul ini menggunakan metode penilaian visual fungsional yang lebih ringkas dan berfokus pada **4 parameter utama** kerusakan permukaan jalan:
+        
+        1.  **Persentase Luas Retak:** Mengukur persentase area yang mengalami retakan dibandingkan dengan total luas segmen jalan (dihitung secara spasial).
+        2.  **Lebar Retak Rata-rata:** Menilai tingkat keparahan retakan berdasarkan ukurannya (lebar retak < 1 mm, 1-3 mm, atau > 3 mm).
+        3.  **Jumlah Lubang:** Total titik lubang (*potholes*) yang terekam dalam satu area segmen jalan.
+        4.  **Kedalaman Alur (*Rutting*):** Mengukur kedalaman jejak roda rata-rata (diekstraksi menggunakan data elevasi DSM).
+        """)
+        
+    st.divider()
+    st.markdown("👈 **Silakan pilih modul analisis pada panel navigasi di sebelah kiri untuk memulai.**")
 
 # =========================================
 # MODUL PCI
@@ -1109,6 +1136,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
