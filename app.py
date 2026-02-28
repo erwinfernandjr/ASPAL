@@ -340,28 +340,28 @@ if menu == "🏠 Beranda":
     
     with col_w1:
         st.markdown("""
-        <div style='background-color: #1E2A38; padding: 20px; border-radius: 10px; border: 1px solid #2d3e50; text-align: center; height: 180px;'>
-            <h1 style='margin-bottom: 5px; margin-top: 0;'>📂</h1>
-            <h4 style='color: white; margin-bottom: 10px;'>1. Input Data</h4>
-            <p style='font-size: 13px; color: #cbd5e1; line-height: 1.4;'>Unggah Shapefile Jalan, layer polygon kerusakan (Retak, Lubang, dll), dan data elevasi DSM.</p>
+        <div style='background-color: #1E2A38; padding: 25px 20px; border-radius: 10px; border: 1px solid #2d3e50; text-align: center; min-height: 210px;'>
+            <h1 style='margin: 0 0 10px 0; font-size: 40px;'>📂</h1>
+            <h4 style='color: white; margin: 0 0 15px 0;'>1. Input Data</h4>
+            <p style='font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin: 0;'>Unggah Shapefile Jalan, layer polygon kerusakan (Retak, Lubang, dll), dan data elevasi DSM.</p>
         </div>
         """, unsafe_allow_html=True)
         
     with col_w2:
         st.markdown("""
-        <div style='background-color: #1E2A38; padding: 20px; border-radius: 10px; border: 1px solid #2d3e50; text-align: center; height: 180px;'>
-            <h1 style='margin-bottom: 5px; margin-top: 0;'>⚙️</h1>
-            <h4 style='color: white; margin-bottom: 10px;'>2. Proses Spasial</h4>
-            <p style='font-size: 13px; color: #cbd5e1; line-height: 1.4;'>Sistem otomatis memotong segmen, menghitung luas/kedalaman kerusakan, dan mengkalkulasi indeks.</p>
+        <div style='background-color: #1E2A38; padding: 25px 20px; border-radius: 10px; border: 1px solid #2d3e50; text-align: center; min-height: 210px;'>
+            <h1 style='margin: 0 0 10px 0; font-size: 40px;'>⚙️</h1>
+            <h4 style='color: white; margin: 0 0 15px 0;'>2. Proses Spasial</h4>
+            <p style='font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin: 0;'>Sistem otomatis memotong segmen, menghitung luas atau kedalaman kerusakan, dan mengkalkulasi indeks.</p>
         </div>
         """, unsafe_allow_html=True)
         
     with col_w3:
         st.markdown("""
-        <div style='background-color: #1E2A38; padding: 20px; border-radius: 10px; border: 1px solid #2d3e50; text-align: center; height: 180px;'>
-            <h1 style='margin-bottom: 5px; margin-top: 0;'>📊</h1>
-            <h4 style='color: white; margin-bottom: 10px;'>3. Laporan & Peta</h4>
-            <p style='font-size: 13px; color: #cbd5e1; line-height: 1.4;'>Unduh hasil akhir dalam bentuk PDF standar ASTM, Peta Interaktif (GPKG), dan tabel Excel.</p>
+        <div style='background-color: #1E2A38; padding: 25px 20px; border-radius: 10px; border: 1px solid #2d3e50; text-align: center; min-height: 210px;'>
+            <h1 style='margin: 0 0 10px 0; font-size: 40px;'>📊</h1>
+            <h4 style='color: white; margin: 0 0 15px 0;'>3. Laporan & Peta</h4>
+            <p style='font-size: 13.5px; color: #cbd5e1; line-height: 1.5; margin: 0;'>Unduh hasil akhir dalam bentuk PDF berstandar ASTM, Peta Spasial (GPKG), dan tabel Excel.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -375,29 +375,31 @@ if menu == "🏠 Beranda":
     col_b1, col_b2 = st.columns(2)
     
     with col_b1:
-        st.info("**📈 Pavement Condition Index (PCI)**")
+        st.info("**Pavement Condition Index (PCI)**")
         st.markdown("""
         Mengkalkulasi tingkat kerusakan kompleks berdasarkan **19 jenis kerusakan** (Standar ASTM D6433):
         
-        * 🧱 **Retak:** Kulit Buaya, Blok, Pinggir, Memanjang/Melintang, Refleksi, Selip.
-        * 🌊 **Deformasi:** Alur (*Rutting*), Keriting, Amblesan, Jembulan, Sungkur.
-        * 🪨 **Permukaan Dasar:** Lubang, Kegemukan Aspal, Pelepasan Butir, Pelapukan.
-        * ⚠️ **Lain-lain:** Penurunan Bahu Jalan, Tambalan, Perlintasan KA.
+        * **Retak:** Kulit Buaya, Blok, Pinggir, Memanjang/Melintang, Refleksi, Selip.
+        * **Deformasi:** Alur (*Rutting*), Keriting, Amblesan, Jembulan, Sungkur.
+        * **Permukaan Dasar:** Lubang, Kegemukan Aspal, Pelepasan Butir, Pelapukan.
+        * **Lain-lain:** Penurunan Bahu Jalan, Tambalan, Perlintasan KA.
         """)
         
     with col_b2:
-        st.success("**📉 Surface Distress Index (SDI)**")
+        st.success("**Surface Distress Index (SDI)**")
         st.markdown("""
         Metode fungsional dari Bina Marga yang berfokus pada **4 indikator utama** kerusakan visual:
         
-        * 🕸️ **Luas Retak:** Persentase area retak terhadap total luas segmen.
-        * 📏 **Lebar Retak:** Rata-rata bukaan celah retak (< 1mm, 1-3mm, > 3mm).
-        * 🕳️ **Jumlah Lubang:** Total titik lubang (*potholes*) per segmen.
-        * 🚗 **Kedalaman Alur:** Penurunan jejak roda (*rutting*) yang diekstrak secara 3D dari DSM.
+        * **Luas Retak:** Persentase area retak terhadap total luas segmen.
+        * **Lebar Retak:** Rata-rata bukaan celah retak (< 1mm, 1-3mm, > 3mm).
+        * **Jumlah Lubang:** Total titik lubang (*potholes*) per segmen.
+        * **Kedalaman Alur:** Penurunan jejak roda (*rutting*) yang diekstrak secara 3D dari DSM.
         """)
         
     st.divider()
-    st.warning("👈 **Siap memulai evaluasi?** Silakan pilih **Modul PCI** atau **Modul SDI** pada panel navigasi di sebelah kiri.")
+    
+    # CTA Formal
+    st.info("**Panduan Penggunaan:** Untuk memulai tahapan analisis dan evaluasi kondisi perkerasan jalan, silakan memilih **Modul PCI** atau **Modul SDI** melalui panel navigasi yang tersedia di sebelah kiri.")
 
 # =========================================
 # MODUL PCI
@@ -1179,6 +1181,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
