@@ -908,11 +908,12 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
 # MODUL KOMPARASI
 # =========================================
 elif menu == "📊 Komparasi (PCI vs SDI)":
-    st.title("📊 Komparasi Kondisi Jalan (PCI vs SDI)")
+    st.title("📊 Dashboard Komparasi (PCI vs SDI)")
+    
     if st.session_state.pci_selesai and st.session_state.sdi_selesai:
-        st.success("Data PCI dan SDI telah berhasil di-generate. Berikut adalah komparasi per segmen:")
+        st.success("✅ Data PCI dan SDI berhasil disinkronisasi.")
         
-        # Merge data berdasarkan nomor Segmen menggunakan nama kolom 'SDI'
+        # 1. PERSIAPAN DATA MERGE
         df_komparasi = pd.merge(
             st.session_state.df_pci[['Segmen', 'STA', 'PCI', 'Rating']],
             st.session_state.df_sdi[['Segmen', 'SDI', 'Kondisi']],
@@ -920,8 +921,100 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
             how='inner'
         )
         
-        st.dataframe(df_komparasi, use_container_width=True, hide_index=True)
+        # Gabungkan dengan geometri untuk keperluan Peta
+        gdf_komparasi = st.session_state.seg_gdf_pci[['Segmen', 'geometry']].merge(df_komparasi, on='Segmen')
+
+        # ==========================================
+        # 2. KARTU METRIK RINGKASAN
+        # ==========================================
+        st.markdown("### 📌 Ringkasan Eksekutif")
+        col_m1, col_m2, col_m3 = st.columns(3)
         
-        st.info("💡 **Insight:** Evaluasi perbedaan antara klasifikasi kerusakan berdasarkan PCI (Kerusakan Komprehensif Struktural) dan SDI (Kerusakan Permukaan Visual). Segmen dengan nilai PCI 'Poor' dan SDI 'Rusak Berat' harus menjadi prioritas utama pemeliharaan.")
+        with col_m1:
+            st.metric(label="Rata-rata Nilai PCI", value=round(df_komparasi["PCI"].mean(), 2))
+        with col_m2:
+            st.metric(label="Rata-rata Nilai SDI", value=round(df_komparasi["SDI"].mean(), 2))
+        with col_m3:
+            # Definisi Kritis: PCI di bawah 40 (Poor/Worse) ATAU SDI di atas 100 (Rusak Ringan/Berat)
+            segmen_kritis = len(df_komparasi[(df_komparasi["PCI"] <= 40) | (df_komparasi["SDI"] > 100)])
+            st.metric(label="🚨 Segmen Kritis (Prioritas)", value=f"{segmen_kritis} Segmen")
+
+        st.markdown("---")
+
+        # ==========================================
+        # 3. PETA KOMPARASI (SIDE-BY-SIDE)
+        # ==========================================
+        st.markdown("### 🗺️ Komparasi Spasial")
+        st.caption("Peta di bawah ini interaktif. Geser dan zoom untuk membandingkan distribusi kerusakan secara visual.")
+        
+        col_map1, col_map2 = st.columns(2)
+
+        map_gdf = gdf_komparasi.to_crs(epsg=4326)
+        center_y = map_gdf.geometry.centroid.y.mean()
+        center_x = map_gdf.geometry.centroid.x.mean()
+
+        # Peta Kiri: PCI
+        with col_map1:
+            st.markdown("**1. Peta Pavement Condition Index (PCI)**")
+            m_pci = folium.Map(location=[center_y, center_x], zoom_start=15, tiles="CartoDB dark_matter")
+            warna_pci_dict = {"Good": "#006400", "Satisfactory": "#8FBC8F", "Fair": "#FFFF00", "Poor": "#FF6347", "Very Poor": "#FF4500", "Serious": "#8B0000", "Failed": "#A9A9A9"}
+            folium.GeoJson(
+                map_gdf, 
+                style_function=lambda f: {'fillColor': warna_pci_dict.get(f['properties']['Rating'], "#000"), 'color': 'white', 'weight': 0.5, 'fillOpacity': 0.8},
+                tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'PCI', 'Rating'])
+            ).add_to(m_pci)
+            st_folium(m_pci, use_container_width=True, height=400, key="map_comp_pci")
+
+        # Peta Kanan: SDI
+        with col_map2:
+            st.markdown("**2. Peta Surface Distress Index (SDI)**")
+            m_sdi = folium.Map(location=[center_y, center_x], zoom_start=15, tiles="CartoDB dark_matter")
+            warna_kondisi_dict = {"Baik": "#2ecc71", "Sedang": "#f1c40f", "Rusak Ringan": "#e67e22", "Rusak Berat": "#e74c3c"}
+            folium.GeoJson(
+                map_gdf, 
+                style_function=lambda f: {'fillColor': warna_kondisi_dict.get(f['properties']['Kondisi'], "#000"), 'color': 'white', 'weight': 0.5, 'fillOpacity': 0.8},
+                tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'SDI', 'Kondisi'])
+            ).add_to(m_sdi)
+            st_folium(m_sdi, use_container_width=True, height=400, key="map_comp_sdi")
+
+        st.markdown("---")
+
+        # ==========================================
+        # 4. GRAFIK KORELASI & TABEL
+        # ==========================================
+        col_chart, col_table = st.columns([1, 1])
+        
+        with col_chart:
+            st.markdown("### 📈 Hubungan Korelasi")
+            st.caption("Melihat tren antara nilai struktural (PCI) vs permukaan (SDI).")
+            
+            fig, ax = plt.subplots(figsize=(6, 5))
+            # Membalik warna latar grafik agar cocok dengan tema dark mode Streamlit
+            fig.patch.set_facecolor('none')
+            ax.set_facecolor('none')
+            
+            ax.scatter(df_komparasi["PCI"], df_komparasi["SDI"], color='#00a4d6', alpha=0.8, edgecolors='white', s=80)
+            
+            # Garis batas aman/kritis ilustratif
+            ax.axvline(x=55, color='red', linestyle='--', alpha=0.5, label='Batas Wajar PCI')
+            ax.axhline(y=100, color='orange', linestyle='--', alpha=0.5, label='Batas Wajar SDI')
+            
+            ax.set_xlabel("Nilai PCI (↑ Semakin Baik)", color='white')
+            ax.set_ylabel("Nilai SDI (↓ Semakin Baik)", color='white')
+            ax.tick_params(colors='white')
+            for spine in ax.spines.values(): spine.set_edgecolor('gray')
+            ax.grid(True, linestyle=':', alpha=0.3, color='gray')
+            ax.legend(loc="upper right", fontsize=8)
+            
+            st.pyplot(fig)
+
+        with col_table:
+            st.markdown("### 📋 Tabel Detail Komparasi")
+            st.caption("Data mentah hasil penggabungan kedua modul.")
+            st.dataframe(df_komparasi, use_container_width=True, hide_index=True, height=400)
+
+        # Insight box
+        st.info("💡 **Catatan Analisis:** Segmen yang berada pada **kuadran kiri atas grafik** (Nilai PCI Rendah < 55 & Nilai SDI Tinggi > 100) adalah titik kerusakan struktural dan permukaan paling parah yang harus diprioritaskan dalam Rencana Anggaran Biaya (RAB) pemeliharaan jalan.")
+
     else:
-        st.warning("⚠️ Silakan jalankan analisis pada Modul PCI dan Modul SDI terlebih dahulu agar tabel komparasi dapat ditampilkan.")
+        st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
