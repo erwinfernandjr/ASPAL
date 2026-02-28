@@ -1015,61 +1015,99 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
         st.markdown("---")
 
         # ==========================================
-        # 5. GRAFIK KORELASI & TABEL
+       # ==========================================
+        # 5. GRAFIK KORELASI & ANALISIS KUADRAN
         # ==========================================
-        col_chart, col_table = st.columns([1, 1])
+        st.markdown("### 📈 Analisis Lanjutan & Distribusi Kuadran")
+        st.caption("Menganalisis tren hubungan antara nilai struktural (PCI) dan kerusakan permukaan (SDI).")
         
-        with col_chart:
-            st.markdown("### 📈 Hubungan Korelasi")
-            st.caption("Tren antara nilai struktural (PCI) vs permukaan (SDI).")
+        # Fungsi Penentuan Kuadran Otomatis
+        def quadrant_label(pci, sdi):
+            if pci < 55 and sdi > 100: return 'Kritis (Prioritas Utama)'
+            if pci >= 55 and sdi > 100: return 'Permukaan Buruk'
+            if pci < 55 and sdi <= 100: return 'Struktur Buruk'
+            return 'Kondisi Baik'
             
+        # Tambahkan kolom kuadran ke dataframe
+        df_komparasi['Kuadran'] = df_komparasi.apply(lambda r: quadrant_label(r.PCI, r.SDI), axis=1)
+        
+        col_chart1, col_chart2 = st.columns(2)
+        
+        # --- BAGIAN KIRI: SCATTER PLOT & REGRESI ---
+        with col_chart1:
+            st.markdown("**Scatter Plot (PCI vs SDI)**")
             fig, ax = plt.subplots(figsize=(6, 5))
             fig.patch.set_facecolor('none')
             ax.set_facecolor('none')
             
-            # Plot Scatter (Ubah edgecolors jadi putih agar lebih menonjol)
-            ax.scatter(df_komparasi["PCI"], df_komparasi["SDI"], color='#00a4d6', alpha=0.8, edgecolors='white', s=80, zorder=3)
+            # Scatter titik data
+            ax.scatter(df_komparasi["PCI"], df_komparasi["SDI"], color='#00a4d6', alpha=0.9, edgecolors='white', s=80, zorder=3)
             
-            # Tambahan Regresi & Korelasi (Jika data lebih dari 1 titik)
+            # Hitung Regresi & Pearson Correlation (Jika data lebih dari 1)
             if len(df_komparasi) > 1:
                 from scipy.stats import pearsonr
                 slope, intercept = np.polyfit(df_komparasi['PCI'], df_komparasi['SDI'], 1)
-                r, p = pearsonr(df_komparasi['PCI'], df_komparasi['SDI'])
+                r_val, p_val = pearsonr(df_komparasi['PCI'], df_komparasi['SDI'])
+                r_squared = r_val**2
                 
-                # Plot Garis Regresi
+                # Plot Garis Tren
                 x_vals = np.array(ax.get_xlim())
                 y_vals = intercept + slope * x_vals
-                ax.plot(x_vals, y_vals, '--', color='#2ecc71', alpha=0.8, label=f'Trend (r={r:.2f})')
+                ax.plot(x_vals, y_vals, '--', color='#2ecc71', alpha=0.8, label=f'Trend (R²={r_squared:.2f})')
+                
+                # Tampilkan KPI Statistik di Streamlit
+                st.info(f"**Statistik:** Pearson r = `{r_val:.3f}` | p-value = `{p_val:.3e}` | R² = `{r_squared:.3f}`")
             
-            # Garis batas aman/kritis
-            ax.axvline(x=55, color='red', linestyle='--', alpha=0.5, label='Batas Kritis PCI (55)')
-            ax.axhline(y=100, color='orange', linestyle='--', alpha=0.5, label='Batas Kritis SDI (100)')
+            # Garis batas Kritis
+            ax.axvline(x=55, color='#e74c3c', linestyle='-', alpha=0.5, label='Batas Kritis PCI (55)')
+            ax.axhline(y=100, color='#f39c12', linestyle='-', alpha=0.5, label='Batas Kritis SDI (100)')
             
-            # ========================================
-            # PERBAIKAN WARNA AXIS & LABEL MENJADI PUTIH
-            # ========================================
+            # Format Tema Gelap
             ax.set_xlabel("Nilai PCI (↑ Semakin Baik)", color='white')
             ax.set_ylabel("Nilai SDI (↓ Semakin Baik)", color='white')
-            ax.tick_params(colors='white') # Ubah warna angka di sumbu X dan Y
-            
-            for spine in ax.spines.values(): 
-                spine.set_edgecolor('lightgray') # Ubah warna kotak bingkai grafik
-            
+            ax.tick_params(colors='white')
+            for spine in ax.spines.values(): spine.set_edgecolor('lightgray')
             ax.grid(True, linestyle=':', alpha=0.3, color='lightgray', zorder=0)
             
-            # Perbaikan warna teks di dalam Legenda
             legend = ax.legend(loc="upper right", fontsize=8, facecolor='#1e293b', edgecolor='gray')
-            for text in legend.get_texts():
-                text.set_color("white")
+            for text in legend.get_texts(): text.set_color("white")
             
             st.pyplot(fig)
 
-        with col_table:
-            st.markdown("### 📋 Tabel Detail Komparasi")
-            st.caption("Data mentah hasil penggabungan kedua modul.")
-            st.dataframe(df_komparasi, use_container_width=True, hide_index=True, height=400)
+        # --- BAGIAN KANAN: DONUT CHART KUADRAN ---
+        with col_chart2:
+            st.markdown("**Distribusi Kuadran Kerusakan**")
+            fig_pie, ax_pie = plt.subplots(figsize=(6, 5))
+            fig_pie.patch.set_facecolor('none')
+            
+            kuadran_counts = df_komparasi['Kuadran'].value_counts()
+            
+            # Mapping warna sesuai kuadran
+            warna_kuadran = {
+                'Kritis (Prioritas Utama)': '#e74c3c',  # Merah
+                'Permukaan Buruk': '#f39c12',           # Oranye
+                'Struktur Buruk': '#9b59b6',            # Ungu
+                'Kondisi Baik': '#2ecc71'               # Hijau
+            }
+            colors_pie = [warna_kuadran.get(x, '#gray') for x in kuadran_counts.index]
+            
+            # Buat parameter Donut Chart
+            wedges, texts, autotexts = ax_pie.pie(
+                kuadran_counts, labels=kuadran_counts.index, autopct='%1.1f%%',
+                colors=colors_pie, startangle=90, textprops={'color': "white"},
+                wedgeprops=dict(width=0.4, edgecolor='white') # Mengatur lebar cincin donut
+            )
+            
+            plt.setp(autotexts, size=10, weight="bold")
+            ax_pie.axis('equal') # Pastikan bentuknya bulat sempurna
+            st.pyplot(fig_pie)
 
-        st.info("💡 **Catatan Analisis:** Segmen yang berada pada **kuadran kiri atas grafik** (Nilai PCI Rendah < 55 & Nilai SDI Tinggi > 100) adalah titik kerusakan struktural dan permukaan paling parah yang harus diprioritaskan dalam RAB pemeliharaan.")
-    else:
+        st.markdown("---")
+        st.markdown("### 📋 Tabel Detail Komparasi")
+        st.caption("Data mentah hasil penggabungan analisis PCI dan SDI.")
+        # Menghapus sementara kolom Kuadran dari tampilan tabel agar tidak terlalu panjang
+        st.dataframe(df_komparasi.drop(columns=['Kuadran']), use_container_width=True, hide_index=True)
+    else
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
