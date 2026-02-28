@@ -1015,7 +1015,6 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
         st.markdown("---")
 
         # ==========================================
-       # ==========================================
         # 5. GRAFIK KORELASI & ANALISIS KUADRAN
         # ==========================================
         st.markdown("### 📈 Analisis Lanjutan & Distribusi Kuadran")
@@ -1107,7 +1106,8 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
         st.caption("Data mentah hasil penggabungan analisis PCI dan SDI.")
         # Menghapus sementara kolom Kuadran dari tampilan tabel agar tidak terlalu panjang
         st.dataframe(df_komparasi.drop(columns=['Kuadran']), use_container_width=True, hide_index=True)
-    else
+        else
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
