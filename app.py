@@ -159,7 +159,7 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
         z_min = stats_hole[i]["percentile_10"]
         z_ref = stats_ring[i]["median"]
         depth = (z_ref - z_min) * 1000 if (z_min is not None and z_ref is not None) else 0
-        depth = max(0, min(depth, 80)) # Clamp realistis
+        depth = max(0, min(depth, 80))
         depth_list.append(depth)
     gdf = gdf.copy()
     gdf["DEPTH_MM"] = depth_list
@@ -274,6 +274,14 @@ def hitung_sdi(persen_retak, lebar_retak, jumlah_lubang, kedalaman_rutting):
     else: kondisi = "Rusak Berat"
         
     return sdi1, sdi2, sdi3, sdi4, kondisi
+
+def metric_card(label, value, value_color="#4da6ff", bg_color="#1E2A38", text_color="#cbd5e1"):
+    return f"""
+    <div style="background-color: {bg_color}; padding: 15px; border-radius: 8px; border: 1px solid #2d3e50; text-align: center; height: 100%;">
+        <p style="margin: 0px; font-size: 14px; color: {text_color};">{label}</p>
+        <h2 style="margin: 5px 0px 0px 0px; color: {value_color}; font-size: 24px; font-weight: bold;">{value}</h2>
+    </div>
+    """
 
 # =========================================
 # 5. SIDEBAR & NAVIGASI SISTEM ASPAL
@@ -484,9 +492,16 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                         fig_map, ax_map = plt.subplots(figsize=(10,6))
                         seg_plot = seg_gdf.copy()
                         seg_plot["geometry"] = seg_plot.geometry.buffer(4)
+                        legend_handles = []
                         for rating, warna in warna_pci.items():
                             subset = seg_plot[seg_plot["Rating"] == rating]
-                            if not subset.empty: subset.plot(ax=ax_map, color=warna, edgecolor="black", label=f"{rating}")
+                            if not subset.empty: 
+                                subset.plot(ax=ax_map, color=warna, edgecolor="black", label=f"{rating}")
+                                legend_handles.append(mpatches.Patch(color=warna, label=f"{rating} ({len(subset)})"))
+                        for idx, row in seg_gdf.iterrows():
+                            centroid = row.geometry.centroid
+                            ax_map.text(centroid.x, centroid.y, f"S{row['Segmen']}\n{row['PCI']:.0f}", fontsize=7, weight="bold", ha="center", va="center", bbox=dict(facecolor="white", alpha=0.8, boxstyle="round,pad=0.2", edgecolor="gray", lw=0.5))
+                        if legend_handles: ax_map.legend(handles=legend_handles, loc="best", title="Kategori PCI", fontsize=8)
                         ax_map.axis("off")
                         peta_path = os.path.join(tmpdir, "peta_pci.png")
                         plt.savefig(peta_path, dpi=300, bbox_inches='tight')
@@ -495,16 +510,74 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                         fig_bar, ax_bar = plt.subplots(figsize=(6,4))
                         rekap = seg_gdf["Rating"].value_counts()
                         rekap.plot(kind="bar", color=[warna_pci.get(x, "grey") for x in rekap.index], edgecolor="black", ax=ax_bar)
+                        plt.xticks(rotation=45)
                         plt.tight_layout()
                         grafik_path = os.path.join(tmpdir, "grafik_pci.png")
                         plt.savefig(grafik_path, dpi=300)
                         plt.close(fig_bar)
                         
-                        # Generate simple PDF (Ringkasan agar script muat)
+                        # Generate Full PDF Report (PCI)
                         pdf_path = os.path.join(tmpdir, "Laporan_PCI.pdf")
-                        doc = SimpleDocTemplate(pdf_path, pagesize=pagesizes.A4)
-                        elements = [Paragraph("LAPORAN PCI", getSampleStyleSheet()['Title'])]
-                        doc.build(elements) # Simplified PDF generation to keep within bounds
+                        doc = SimpleDocTemplate(pdf_path, pagesize=pagesizes.landscape(pagesizes.A4), rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+                        elements = []
+                        styles = getSampleStyleSheet()
+                        cover_style = ParagraphStyle('cover', parent=styles['Title'], alignment=TA_CENTER)
+                        header_style = ParagraphStyle('header', parent=styles['Normal'], alignment=TA_LEFT, fontSize=12, spaceAfter=10, textColor=colors.HexColor("#1f2937"))
+                        
+                        total_area = seg_gdf["Unit_Area"].sum() if len(seg_gdf) > 0 else 0
+                        rata_pci = round((seg_gdf["PCI"] * seg_gdf["Unit_Area"]).sum() / total_area, 2) if total_area > 0 else 0
+                        kondisi_dominan = seg_gdf["Rating"].value_counts().idxmax() if not seg_gdf["Rating"].empty else "-"
+
+                        elements.append(Paragraph(instansi, cover_style)); elements.append(Spacer(1, 0.3*inch))
+                        elements.append(Paragraph("LAPORAN SURVEY", cover_style)); elements.append(Spacer(1, 0.3*inch))
+                        elements.append(Paragraph("PAVEMENT CONDITION INDEX (PCI)", cover_style)); elements.append(Spacer(1, 1*inch))
+                        elements.append(Paragraph(f"<b>Lokasi :</b> {lokasi}", styles["Normal"]))
+                        elements.append(Paragraph(f"<b>STA :</b> {sta_umum}", styles["Normal"]))
+                        elements.append(Paragraph(f"<b>Surveyor :</b> {surveyor}", styles["Normal"]))
+                        elements.append(Paragraph(f"<b>Tanggal :</b> {tanggal}", styles["Normal"])); elements.append(PageBreak())
+
+                        elements.append(Paragraph("<b>1. Tabel Rekapitulasi Umum</b>", styles["Heading2"]))
+                        ringkasan_table = Table([["Lokasi", lokasi], ["STA", sta_umum], ["Jumlah Segmen", str(len(seg_gdf))], ["Panjang Jalan Terukur", f"{len(seg_gdf)*interval_segmen} meter"], ["Rata-rata PCI Keseluruhan", f"{rata_pci}"], ["Kondisi Dominan", kondisi_dominan]], colWidths=[200, 400])
+                        ringkasan_table.setStyle(TableStyle([('GRID',(0,0),(-1,-1),0.5,colors.grey), ('BACKGROUND',(0,0),(0,-1),colors.HexColor("#f3f4f6")), ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'), ('PADDING', (0,0), (-1,-1), 8)]))
+                        elements.append(ringkasan_table); elements.append(Spacer(1, 0.3 * inch))
+
+                        elements.append(Paragraph("<b>2. Grafik Distribusi PCI</b>", styles["Heading2"]))
+                        elements.append(Image(grafik_path, width=6.5*inch, height=3.5*inch)); elements.append(PageBreak())
+                        elements.append(Paragraph("<b>3. Peta Kondisi Jalan</b>", styles["Heading2"]))
+                        elements.append(Image(peta_path, width=9.5*inch, height=5.5*inch)); elements.append(PageBreak())
+
+                        elements.append(Paragraph("<b>LAMPIRAN: KERTAS KERJA PER SEGMEN</b>", styles["Heading1"]))
+                        COLOR_HEADER_BG = colors.HexColor("#1e293b"); COLOR_HEADER_TXT = colors.white; COLOR_CELL_BG = colors.HexColor("#f8fafc")
+
+                        for idx, seg in df_pci.sort_values('Segmen').reset_index(drop=True).iterrows():
+                            if idx > 0: elements.append(PageBreak())
+                            seg_id = seg["Segmen"]
+                            df_seg_detail = df_detail[df_detail["Segmen"] == seg_id] if not df_detail.empty else pd.DataFrame()
+                            hdv_val = df_seg_detail["DV"].max() if not df_seg_detail.empty else 0.0
+                            m_val = min(1 + (9.0 / 95.0) * (100.0 - hdv_val), 10.0) if hdv_val > 0 else 0.0
+
+                            elements.append(Paragraph(f"<b>REPORT SEGMEN : {seg_id} (STA: {seg['STA']})</b>", styles["Heading2"]))
+                            elements.append(Paragraph("<b>A. Flexible Pavement Condition Data Sheet</b>", header_style))
+                            tabel_a_data = [["Distress Type", "Severity", "Quantity (sq.m)", "Density (%)", "Deduct Value (DV)"]]
+                            if df_seg_detail.empty: tabel_a_data.append(["Tidak ada kerusakan", "-", "0.00", "0.00", "0.00"])
+                            else:
+                                for _, row in df_seg_detail.iterrows():
+                                    tqty = (row["Density"] / 100.0) * (interval_segmen * lebar_jalan)
+                                    tabel_a_data.append([row["Distress"].replace("_", " ").title(), row["Severity"], f"{tqty:.2f}", f"{row['Density']:.2f}", f"{row['DV']:.2f}"])
+                            t_a = Table(tabel_a_data, colWidths=[3*inch, 1.5*inch, 1.5*inch, 1.5*inch, 2*inch])
+                            t_a.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey), ('BACKGROUND', (0,0), (-1,0), COLOR_HEADER_BG), ('TEXTCOLOR', (0,0), (-1,0), COLOR_HEADER_TXT), ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold')]))
+                            elements.append(t_a); elements.append(Spacer(1, 0.3*inch))
+
+                            elements.append(Paragraph("<b>B. Maximum allowable number of distresses (m)</b>", header_style))
+                            t_b = Table([["Highest Deduct Value (HDV)", "m = 1 + (9/95)*(100 - HDV) \u2264 10"], [f"{hdv_val:.2f}", f"{m_val:.2f}"]], colWidths=[4.75*inch, 4.75*inch])
+                            t_b.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.lightgrey), ('INNERGRID', (0,0), (-1,-1), 0.5, colors.lightgrey), ('BACKGROUND', (0,0), (-1,0), COLOR_HEADER_BG), ('TEXTCOLOR', (0,0), (-1,0), COLOR_HEADER_TXT), ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold')]))
+                            elements.append(t_b); elements.append(Spacer(1, 0.3*inch))
+
+                            elements.append(Paragraph("<b>C. Calculate Pavement Condition Index (PCI)</b>", header_style))
+                            t_c = Table([["Max CDV", "PCI = 100 - Max CDV", "Rating (ASTM)"], [f"{seg['CDV']:.2f}", f"{seg['PCI']:.2f}", seg['Rating']]], colWidths=[3.16*inch, 3.16*inch, 3.18*inch])
+                            t_c.setStyle(TableStyle([('BOX', (0,0), (-1,-1), 1, colors.lightgrey), ('INNERGRID', (0,0), (-1,-1), 0.5, colors.lightgrey), ('BACKGROUND', (0,0), (-1,0), COLOR_HEADER_BG), ('TEXTCOLOR', (0,0), (-1,0), COLOR_HEADER_TXT), ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), ('BACKGROUND', (2,1), (2,1), colors.HexColor(warna_pci.get(seg['Rating'], "#FFF")))]))
+                            elements.append(t_c)
+                        doc.build(elements)
 
                         # EXPORT GPKG & EXCEL
                         gpkg_path = os.path.join(tmpdir, "Peta_Hasil_PCI.gpkg")
@@ -543,13 +616,53 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
             m = folium.Map(location=[map_gdf.geometry.centroid.y.mean(), map_gdf.geometry.centroid.x.mean()], zoom_start=15)
             warna_pci_dict = {"Good": "#006400", "Satisfactory": "#8FBC8F", "Fair": "#FFFF00", "Poor": "#FF6347", "Very Poor": "#FF4500", "Serious": "#8B0000", "Failed": "#A9A9A9"}
             folium.GeoJson(map_gdf, style_function=lambda f: {'fillColor': warna_pci_dict.get(f['properties']['Rating'], "#000"), 'color': 'black', 'weight': 1, 'fillOpacity': 0.8},
-                           tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'PCI', 'Rating'])).add_to(m)
+                           tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'STA', 'PCI', 'Rating'])).add_to(m)
             st_folium(m, use_container_width=True, height=400)
         with col_res2:
             st.subheader("Distribusi")
             st.image(st.session_state.grafik_bytes_pci)
-        st.dataframe(st.session_state.df_pci[["Segmen", "STA", "PCI", "Rating"]], use_container_width=True, hide_index=True)
+            st.metric("Rata-rata PCI", round(st.session_state.df_pci["PCI"].mean(), 2))
+        
+        # DASHBOARD PER SEGMEN (PCI)
+        st.markdown("---")
+        st.subheader("🔎 Dashboard Detail Per Segmen (PCI)")
+        pilihan_segmen_pci = st.selectbox("Pilih Segmen:", st.session_state.df_pci["Segmen"].tolist(), key="sel_pci")
 
+        if pilihan_segmen_pci:
+            seg_data = st.session_state.df_pci[st.session_state.df_pci["Segmen"] == pilihan_segmen_pci].iloc[0]
+            df_seg_detail = st.session_state.df_detail_pci[st.session_state.df_detail_pci["Segmen"] == pilihan_segmen_pci]
+            hdv_val = df_seg_detail["DV"].max() if not df_seg_detail.empty else 0.0
+            m_val = min(1 + (9.0 / 95.0) * (100.0 - hdv_val), 10.0) if hdv_val > 0 else 0.0
+
+            st.markdown(f"#### REPORT SEGMEN : {pilihan_segmen_pci} (STA: {seg_data['STA']})")
+            st.markdown("**A. Flexible Pavement Condition Data Sheet**")
+            if df_seg_detail.empty: st.info("✅ Tidak ada kerusakan pada segmen ini.")
+            else:
+                display_df = df_seg_detail.copy()
+                display_df["Distress Type"] = display_df["Distress"].str.replace("_", " ").str.title()
+                display_df["Quantity (sq.m)"] = (display_df["Density"] / 100.0) * (interval_segmen * lebar_jalan)
+                display_df = display_df[["Distress Type", "Severity", "Quantity (sq.m)", "Density", "DV"]].rename(columns={"Density": "Density (%)", "DV": "Deduct Value (DV)"})
+                st.dataframe(display_df.style.format({"Quantity (sq.m)": "{:.2f}", "Density (%)": "{:.2f}", "Deduct Value (DV)": "{:.2f}"}), use_container_width=True, hide_index=True)
+
+            st.markdown("**B. Maximum allowable number of distresses (m)**")
+            col_b1, col_b2 = st.columns(2)
+            with col_b1: st.markdown(metric_card("Highest Deduct Value (HDV)", f"{hdv_val:.2f}"), unsafe_allow_html=True)
+            with col_b2: st.markdown(metric_card("m = 1 + (9/95)*(100 - HDV) ≤ 10", f"{m_val:.2f}"), unsafe_allow_html=True)
+
+            st.markdown("<br>**C. Calculate Pavement Condition Index (PCI)**", unsafe_allow_html=True)
+            col_c1, col_c2, col_c3 = st.columns(3)
+            with col_c1: st.markdown(metric_card("Max CDV", f"{seg_data['CDV']:.2f}"), unsafe_allow_html=True)
+            with col_c2: st.markdown(metric_card("PCI = 100 - Max CDV", f"{seg_data['PCI']:.2f}"), unsafe_allow_html=True)
+            bg_col = warna_pci_dict.get(seg_data['Rating'], "#FFFFFF")
+            txt_col = "#000000" if seg_data['Rating'] in ["Satisfactory", "Fair", "Good"] else "#ffffff"
+            with col_c3: st.markdown(metric_card("Rating (ASTM)", seg_data['Rating'], value_color=txt_col, bg_color=bg_col, text_color=txt_col), unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.subheader("💾 Download Hasil Analisis PCI")
+        col_dl1, col_dl2, col_dl3 = st.columns(3)
+        with col_dl1: st.download_button("📄 Laporan Full PDF", data=st.session_state.pdf_bytes_pci, file_name=f"Laporan_PCI_{lokasi.replace(' ', '_')}.pdf", mime="application/pdf", type="primary", use_container_width=True)
+        with col_dl2: st.download_button("🗺️ Peta Spasial (.gpkg)", data=st.session_state.gpkg_bytes_pci, file_name=f"Peta_PCI_{lokasi.replace(' ', '_')}.gpkg", mime="application/geopackage+sqlite3", type="secondary", use_container_width=True)
+        with col_dl3: st.download_button("📊 Data Mentah (.xlsx)", data=st.session_state.excel_bytes_pci, file_name=f"Data_PCI_{lokasi.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="secondary", use_container_width=True)
 
 # =========================================
 # MODUL SDI
@@ -644,7 +757,7 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                             kedalaman_rutting = 0 if pd.isna(kedalaman_rutting) else kedalaman_rutting
                             sdi1, sdi2, sdi3, sdi4, kondisi = hitung_sdi(persen_retak, lebar_retak, jumlah_lubang, kedalaman_rutting)
                             
-                            hasil_sdi.append({"Segmen": seg["Segmen"], "STA": seg["STA"], "%Retak": round(persen_retak, 2), "Lebar Retak (mm)": round(lebar_retak, 2), "Jumlah Lubang": jumlah_lubang, "Rutting (cm)": round(kedalaman_rutting, 2), "SDI1": sdi1, "SDI2": sdi2, "SDI3": sdi3, "SDI4": round(sdi4, 2), "Kondisi": kondisi})
+                            hasil_sdi.append({"Segmen": seg["Segmen"], "STA": seg["STA"], "%Retak": round(persen_retak, 2), "Lebar Retak (mm)": round(lebar_retak, 2), "Jumlah Lubang": jumlah_lubang, "Rutting (cm)": round(kedalaman_rutting, 2), "SDI1": sdi1, "SDI2": sdi2, "SDI3": sdi3, "SDI": round(sdi4, 2), "Kondisi": kondisi})
 
                         df_sdi = pd.DataFrame(hasil_sdi)
                         seg_gdf = seg_gdf.merge(df_sdi.drop(columns=["STA"]), on="Segmen", how="left")
@@ -652,9 +765,16 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                         warna_kondisi = {"Baik": "#2ecc71", "Sedang": "#f1c40f", "Rusak Ringan": "#e67e22", "Rusak Berat": "#e74c3c"}
                         fig_map, ax_map = plt.subplots(figsize=(10,6))
                         seg_gdf.boundary.plot(ax=ax_map, linewidth=0.5, color="black")
+                        legend_handles = []
                         for kondisi, warna in warna_kondisi.items():
                             subset = seg_gdf[seg_gdf["Kondisi"] == kondisi]
-                            if not subset.empty: subset.plot(ax=ax_map, color=warna, edgecolor="black", linewidth=1)
+                            if not subset.empty: 
+                                subset.plot(ax=ax_map, color=warna, edgecolor="black", linewidth=1)
+                                legend_handles.append(mpatches.Patch(color=warna, label=f"{kondisi} ({len(subset)})"))
+                        for idx, row in seg_gdf.iterrows():
+                            centroid = row.geometry.centroid
+                            ax_map.text(centroid.x, centroid.y, f"S{row['Segmen']}\n{row['SDI']:.0f}", fontsize=7, weight="bold", ha="center", va="center", bbox=dict(facecolor="white", alpha=0.8, boxstyle="round,pad=0.2", edgecolor="gray", lw=0.5))
+                        if legend_handles: ax_map.legend(handles=legend_handles, loc="best", title="Kategori Kondisi", fontsize=8)
                         ax_map.axis("off")
                         peta_path = os.path.join(tmpdir, "peta_sdi.png")
                         plt.savefig(peta_path, dpi=300, bbox_inches='tight')
@@ -663,14 +783,55 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                         fig_bar, ax_bar = plt.subplots(figsize=(6,4))
                         rekap = seg_gdf["Kondisi"].value_counts()
                         rekap.plot(kind="bar", color=[warna_kondisi.get(x, "grey") for x in rekap.index], edgecolor="black", ax=ax_bar)
+                        plt.title("Distribusi Kondisi Jalan (Segmen)")
+                        plt.xticks(rotation=0)
                         plt.tight_layout()
                         grafik_path = os.path.join(tmpdir, "grafik_sdi.png")
                         plt.savefig(grafik_path, dpi=300)
                         plt.close(fig_bar)
                         
+                        # Generate Full PDF Report (SDI)
                         pdf_path = os.path.join(tmpdir, "Laporan_SDI.pdf")
-                        doc = SimpleDocTemplate(pdf_path, pagesize=pagesizes.A4)
-                        doc.build([Paragraph("LAPORAN SDI", getSampleStyleSheet()['Title'])])
+                        doc = SimpleDocTemplate(pdf_path, pagesize=pagesizes.A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+                        elements = []
+                        styles = getSampleStyleSheet()
+                        cover_style = ParagraphStyle('cover', parent=styles['Title'], alignment=TA_CENTER)
+                        rata_sdi = round(df_sdi["SDI"].mean(), 2)
+                        kondisi_dominan = df_sdi["Kondisi"].value_counts().idxmax() if not df_sdi.empty else "-"
+
+                        elements.append(Paragraph(instansi, cover_style)); elements.append(Spacer(1, 0.3*inch))
+                        elements.append(Paragraph("LAPORAN SURVEY", cover_style)); elements.append(Spacer(1, 0.3*inch))
+                        elements.append(Paragraph("SURFACE DISTRESS INDEX (SDI)", cover_style)); elements.append(Spacer(1, 1*inch))
+                        elements.append(Paragraph(f"<b>Lokasi :</b> {lokasi}", styles["Normal"]))
+                        elements.append(Paragraph(f"<b>STA :</b> {sta_umum}", styles["Normal"]))
+                        elements.append(Paragraph(f"<b>Surveyor :</b> {surveyor}", styles["Normal"]))
+                        elements.append(Paragraph(f"<b>Tanggal :</b> {tanggal}", styles["Normal"])); elements.append(PageBreak())
+
+                        elements.append(Paragraph("<b>1. Ringkasan Rekapitulasi Umum</b>", styles["Heading2"]))
+                        ringkasan_table = Table([["Lokasi", lokasi], ["STA", sta_umum], ["Jumlah Segmen", str(len(seg_gdf))], ["Panjang Jalan Terukur", f"{len(seg_gdf)*interval_segmen} meter"], ["Rata-rata SDI Keseluruhan", f"{rata_sdi}"], ["Kondisi Dominan", kondisi_dominan]], colWidths=[200, 300])
+                        ringkasan_table.setStyle(TableStyle([('GRID',(0,0),(-1,-1),0.5,colors.grey), ('BACKGROUND',(0,0),(0,-1),colors.HexColor("#f3f4f6")), ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold')]))
+                        elements.append(ringkasan_table); elements.append(Spacer(1, 0.3 * inch))
+
+                        elements.append(Paragraph("<b>2. Visualisasi Kondisi Jalan</b>", styles["Heading2"]))
+                        elements.append(Image(peta_path, width=7.5*inch, height=4.5*inch)); elements.append(Spacer(1, 0.2 * inch))
+                        elements.append(Image(grafik_path, width=4.5*inch, height=3*inch)); elements.append(PageBreak())
+
+                        elements.append(Paragraph("<b>3. Data Kerusakan Terukur Per Segmen</b>", styles["Heading2"]))
+                        tabel1_data = [["Segmen", "STA", "% Retak", "Lebar Retak\n(mm)", "Jumlah\nLubang", "Rutting\n(cm)"]]
+                        for _, row in df_sdi.iterrows():
+                            tabel1_data.append([str(row["Segmen"]), row["STA"], str(row["%Retak"]), str(row["Lebar Retak (mm)"]), str(row["Jumlah Lubang"]), str(row["Rutting (cm)"])])
+                        t1_detail = Table(tabel1_data, repeatRows=1, colWidths=[0.8*inch, 2.0*inch, 1.0*inch, 1.2*inch, 1.0*inch, 1.0*inch])
+                        t1_detail.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1e293b")), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), ('FONTSIZE', (0,0), (-1,-1), 9)]))
+                        elements.append(t1_detail); elements.append(PageBreak())
+
+                        elements.append(Paragraph("<b>4. Perhitungan Berjenjang SDI Per Segmen</b>", styles["Heading2"]))
+                        tabel2_data = [["Segmen", "STA", "SDI 1\n(Retak)", "SDI 2\n(+L. Retak)", "SDI 3\n(+Lubang)", "SDI\n(+Rutting)", "Kondisi Akhir"]]
+                        for _, row in df_sdi.iterrows():
+                            tabel2_data.append([str(row["Segmen"]), row["STA"], str(row["SDI1"]), str(row["SDI2"]), str(row["SDI3"]), str(row["SDI"]), row["Kondisi"]])
+                        t2_detail = Table(tabel2_data, repeatRows=1, colWidths=[0.8*inch, 1.8*inch, 0.8*inch, 0.9*inch, 0.8*inch, 0.8*inch, 1.1*inch])
+                        t2_detail.setStyle(TableStyle([('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1e293b")), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'), ('FONTSIZE', (0,0), (-1,-1), 9)]))
+                        elements.append(t2_detail)
+                        doc.build(elements)
 
                         gpkg_path = os.path.join(tmpdir, "Peta_Hasil_SDI.gpkg")
                         export_gdf = seg_gdf.copy()
@@ -702,12 +863,46 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
             m = folium.Map(location=[map_gdf.geometry.centroid.y.mean(), map_gdf.geometry.centroid.x.mean()], zoom_start=15)
             warna_kondisi_dict = {"Baik": "#2ecc71", "Sedang": "#f1c40f", "Rusak Ringan": "#e67e22", "Rusak Berat": "#e74c3c"}
             folium.GeoJson(map_gdf, style_function=lambda f: {'fillColor': warna_kondisi_dict.get(f['properties']['Kondisi'], "#000"), 'color': 'black', 'weight': 1, 'fillOpacity': 0.8},
-                           tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'SDI4', 'Kondisi'])).add_to(m)
+                           tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'STA', 'SDI', 'Kondisi'])).add_to(m)
             st_folium(m, use_container_width=True, height=400)
         with col_res2:
             st.subheader("Distribusi")
             st.image(st.session_state.grafik_bytes_sdi)
-        st.dataframe(st.session_state.df_sdi[["Segmen", "STA", "SDI4", "Kondisi"]], use_container_width=True, hide_index=True)
+            st.metric("Rata-rata Nilai SDI", round(st.session_state.df_sdi["SDI"].mean(), 2))
+        
+        # DASHBOARD PER SEGMEN (SDI)
+        st.markdown("---")
+        st.subheader("🔎 Dashboard Detail Perhitungan Segmen (SDI)")
+        pilihan_segmen_sdi = st.selectbox("Pilih Segmen:", st.session_state.df_sdi["Segmen"].tolist(), key="sel_sdi")
+
+        if pilihan_segmen_sdi:
+            seg_data = st.session_state.df_sdi[st.session_state.df_sdi["Segmen"] == pilihan_segmen_sdi].iloc[0]
+
+            st.markdown(f"#### REPORT SEGMEN : {pilihan_segmen_sdi} (STA: {seg_data['STA']})")
+            st.markdown("**A. Data Kerusakan Terukur**")
+            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+            with col_m1: st.markdown(metric_card("Luas Retak (%)", f"{seg_data['%Retak']:.2f}%"), unsafe_allow_html=True)
+            with col_m2: st.markdown(metric_card("Lebar Retak (mm)", f"{seg_data['Lebar Retak (mm)']:.2f}"), unsafe_allow_html=True)
+            with col_m3: st.markdown(metric_card("Jumlah Lubang (Ttk)", f"{seg_data['Jumlah Lubang']}"), unsafe_allow_html=True)
+            with col_m4: st.markdown(metric_card("Rutting/Alur (cm)", f"{seg_data['Rutting (cm)']:.2f}"), unsafe_allow_html=True)
+
+            st.markdown("<br>**B. Perhitungan Berjenjang SDI**", unsafe_allow_html=True)
+            col_s1, col_s2, col_s3, col_s4, col_s5 = st.columns(5)
+            with col_s1: st.markdown(metric_card("SDI 1<br>(Retak)", f"{seg_data['SDI1']}"), unsafe_allow_html=True)
+            with col_s2: st.markdown(metric_card("SDI 2<br>(+Lebar Retak)", f"{seg_data['SDI2']}"), unsafe_allow_html=True)
+            with col_s3: st.markdown(metric_card("SDI 3<br>(+Lubang)", f"{seg_data['SDI3']}"), unsafe_allow_html=True)
+            with col_s4: st.markdown(metric_card("SDI<br>(Nilai Akhir)", f"{seg_data['SDI']:.2f}", value_color="#ffcc00"), unsafe_allow_html=True)
+            
+            bg_col = warna_kondisi_dict.get(seg_data['Kondisi'], "#FFFFFF")
+            txt_col = "#000000" if seg_data['Kondisi'] in ["Sedang", "Baik"] else "#ffffff"
+            with col_s5: st.markdown(metric_card("Kondisi<br>Akhir", seg_data['Kondisi'], value_color=txt_col, bg_color=bg_col, text_color=txt_col), unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.subheader("💾 Download Hasil Analisis SDI")
+        col_dl1, col_dl2, col_dl3 = st.columns(3)
+        with col_dl1: st.download_button("📄 Laporan Full PDF", data=st.session_state.pdf_bytes_sdi, file_name=f"Laporan_SDI_{lokasi.replace(' ', '_')}.pdf", mime="application/pdf", type="primary", use_container_width=True)
+        with col_dl2: st.download_button("🗺️ Peta Spasial (.gpkg)", data=st.session_state.gpkg_bytes_sdi, file_name=f"Peta_SDI_{lokasi.replace(' ', '_')}.gpkg", mime="application/geopackage+sqlite3", type="secondary", use_container_width=True)
+        with col_dl3: st.download_button("📊 Data Mentah (.xlsx)", data=st.session_state.excel_bytes_sdi, file_name=f"Data_SDI_{lokasi.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="secondary", use_container_width=True)
 
 # =========================================
 # MODUL KOMPARASI
@@ -717,18 +912,16 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
     if st.session_state.pci_selesai and st.session_state.sdi_selesai:
         st.success("Data PCI dan SDI telah berhasil di-generate. Berikut adalah komparasi per segmen:")
         
-        # Merge data berdasarkan nomor Segmen
+        # Merge data berdasarkan nomor Segmen menggunakan nama kolom 'SDI'
         df_komparasi = pd.merge(
             st.session_state.df_pci[['Segmen', 'STA', 'PCI', 'Rating']],
-            st.session_state.df_sdi[['Segmen', 'SDI4', 'Kondisi']],
+            st.session_state.df_sdi[['Segmen', 'SDI', 'Kondisi']],
             on='Segmen',
             how='inner'
         )
         
-        # Tampilkan tabel komparasi
         st.dataframe(df_komparasi, use_container_width=True, hide_index=True)
         
-        # Kesimpulan sederhana
         st.info("💡 **Insight:** Evaluasi perbedaan antara klasifikasi kerusakan berdasarkan PCI (Kerusakan Komprehensif Struktural) dan SDI (Kerusakan Permukaan Visual). Segmen dengan nilai PCI 'Poor' dan SDI 'Rusak Berat' harus menjadi prioritas utama pemeliharaan.")
     else:
         st.warning("⚠️ Silakan jalankan analisis pada Modul PCI dan Modul SDI terlebih dahulu agar tabel komparasi dapat ditampilkan.")
