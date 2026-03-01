@@ -786,13 +786,7 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
             for nama, bg, txt, rentang in skala_pci:
                 st.markdown(f"<div style='background-color: {bg}; color: {txt}; padding: 6px 12px; margin-bottom: 5px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1);'><span>{nama}</span><span>{rentang}</span></div>", unsafe_allow_html=True)
         
-        # --- TABEL REKAP KESELURUHAN PCI ---
-        st.markdown("---")
-        st.subheader("📋 Tabel Rekapitulasi Keseluruhan (PCI)")
-        st.caption("Klik pada header kolom (misal: 'Skor PCI') untuk mengurutkan data dari nilai tertinggi ke terendah atau sebaliknya.")
-        df_pci_display = st.session_state.df_pci[['Segmen', 'STA', 'PCI', 'Rating']].copy()
-        df_pci_display.columns = ['Segmen', 'STA', 'Skor PCI', 'Kelas Kerusakan']
-        st.dataframe(df_pci_display, use_container_width=True, hide_index=True)
+
         # -----------------------------------
 
         # DASHBOARD PER SEGMEN (PCI)
@@ -1119,13 +1113,6 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
             for nama, bg, txt, rentang in skala_sdi:
                 st.markdown(f"<div style='background-color: {bg}; color: {txt}; padding: 6px 12px; margin-bottom: 5px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1);'><span>{nama}</span><span>{rentang}</span></div>", unsafe_allow_html=True)
         
-        # --- TABEL REKAP KESELURUHAN SDI ---
-        st.markdown("---")
-        st.subheader("📋 Tabel Rekapitulasi Keseluruhan (SDI)")
-        st.caption("Klik pada header kolom (misal: 'Skor SDI') untuk mengurutkan data dari nilai tertinggi ke terendah atau sebaliknya.")
-        df_sdi_display = st.session_state.df_sdi[['Segmen', 'STA', 'SDI', 'Kondisi']].copy()
-        df_sdi_display.columns = ['Segmen', 'STA', 'Skor SDI', 'Kelas Kerusakan']
-        st.dataframe(df_sdi_display, use_container_width=True, hide_index=True)
         # -----------------------------------
 
         # DASHBOARD PER SEGMEN (SDI)
@@ -1367,6 +1354,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
