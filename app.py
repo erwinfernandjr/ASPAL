@@ -1024,17 +1024,17 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
             
             # 2. Layer Overlay Retak (Merah)
             if st.session_state.gdf_retak_sdi is not None and not st.session_state.gdf_retak_sdi.empty:
-                folium.GeoJson(st.session_state.gdf_retak_sdi.to_crs(epsg=4326), name="SHP Retak", 
+                folium.GeoJson(st.session_state.gdf_retak_sdi.to_crs(epsg=4326), name="Retak", 
                                style_function=lambda x: {'color': '#e74c3c', 'weight': 2}).add_to(m)
             
             # 3. Layer Overlay Lubang (Biru)
             if st.session_state.gdf_pothole_sdi is not None and not st.session_state.gdf_pothole_sdi.empty:
-                folium.GeoJson(st.session_state.gdf_pothole_sdi.to_crs(epsg=4326), name="SHP Lubang", 
+                folium.GeoJson(st.session_state.gdf_pothole_sdi.to_crs(epsg=4326), name="Lubang", 
                                style_function=lambda x: {'color': '#3498db', 'fillColor': '#3498db', 'weight': 2}).add_to(m)
                                
             # 4. Layer Overlay Rutting (Ungu)
             if st.session_state.gdf_rutting_sdi is not None and not st.session_state.gdf_rutting_sdi.empty:
-                folium.GeoJson(st.session_state.gdf_rutting_sdi.to_crs(epsg=4326), name="SHP Rutting", 
+                folium.GeoJson(st.session_state.gdf_rutting_sdi.to_crs(epsg=4326), name="Rutting", 
                                style_function=lambda x: {'color': '#9b59b6', 'fillColor': '#9b59b6', 'weight': 2}).add_to(m)
 
             folium.LayerControl().add_to(m)
@@ -1292,6 +1292,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
