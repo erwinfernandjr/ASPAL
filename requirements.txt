@@ -12,3 +12,5 @@ reportlab
 gdown
 xlsxwriter
 scipy
+contextily
+matplotlib-scalebar
