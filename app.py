@@ -946,12 +946,12 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
             with col_c3: st.markdown(metric_card("Rating (ASTM)", seg_data['Rating'], value_color=txt_col, bg_color=bg_col, text_color=txt_col), unsafe_allow_html=True)
 
         st.markdown("---")
-       st.subheader("💾 Download Hasil Analisis SDI")
+        st.subheader("💾 Download Hasil Analisis PCI")
         col_dl1, col_dl2, col_dl3, col_dl4 = st.columns(4)
-        with col_dl1: st.download_button("📄 Laporan PDF", data=st.session_state.pdf_bytes_sdi, file_name=f"Laporan_SDI_{lokasi.replace(' ', '_')}.pdf", mime="application/pdf", type="primary", use_container_width=True)
-        with col_dl2: st.download_button("🗺️ Peta (.gpkg)", data=st.session_state.gpkg_bytes_sdi, file_name=f"Peta_SDI_{lokasi.replace(' ', '_')}.gpkg", mime="application/geopackage+sqlite3", type="secondary", use_container_width=True)
-        with col_dl3: st.download_button("📊 Data (.xlsx)", data=st.session_state.excel_bytes_sdi, file_name=f"Data_SDI_{lokasi.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="secondary", use_container_width=True)
-        with col_dl4: st.download_button("🖼️ Layout Peta (.png)", data=st.session_state.peta_bytes_sdi, file_name=f"Layout_A3_SDI_{lokasi.replace(' ', '_')}.png", mime="image/png", type="secondary", use_container_width=True)
+        with col_dl1: st.download_button("📄 Laporan PDF", data=st.session_state.pdf_bytes_pci, file_name=f"Laporan_PCI_{lokasi.replace(' ', '_')}.pdf", mime="application/pdf", type="primary", use_container_width=True)
+        with col_dl2: st.download_button("🗺️ Peta (.gpkg)", data=st.session_state.gpkg_bytes_pci, file_name=f"Peta_PCI_{lokasi.replace(' ', '_')}.gpkg", mime="application/geopackage+sqlite3", type="secondary", use_container_width=True)
+        with col_dl3: st.download_button("📊 Data (.xlsx)", data=st.session_state.excel_bytes_pci, file_name=f"Data_PCI_{lokasi.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="secondary", use_container_width=True)
+        with col_dl4: st.download_button("🖼️ Layout Peta (.png)", data=st.session_state.peta_bytes_pci, file_name=f"Layout_A3_PCI_{lokasi.replace(' ', '_')}.png", mime="image/png", type="secondary", use_container_width=True)
 # =========================================
 # MODUL SDI
 # =========================================
@@ -1266,14 +1266,11 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
 
         st.markdown("---")
         st.subheader("💾 Download Hasil Analisis SDI")
-        col_dl1, col_dl2, col_dl3 = st.columns(3)
-        st.subheader("💾 Download Hasil Analisis PCI")
         col_dl1, col_dl2, col_dl3, col_dl4 = st.columns(4)
-        with col_dl1: st.download_button("📄 Laporan PDF", data=st.session_state.pdf_bytes_pci, file_name=f"Laporan_PCI_{lokasi.replace(' ', '_')}.pdf", mime="application/pdf", type="primary", use_container_width=True)
-        with col_dl2: st.download_button("🗺️ Peta (.gpkg)", data=st.session_state.gpkg_bytes_pci, file_name=f"Peta_PCI_{lokasi.replace(' ', '_')}.gpkg", mime="application/geopackage+sqlite3", type="secondary", use_container_width=True)
-        with col_dl3: st.download_button("📊 Data (.xlsx)", data=st.session_state.excel_bytes_pci, file_name=f"Data_PCI_{lokasi.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="secondary", use_container_width=True)
-        with col_dl4: st.download_button("🖼️ Layout Peta (.png)", data=st.session_state.peta_bytes_pci, file_name=f"Layout_A3_PCI_{lokasi.replace(' ', '_')}.png", mime="image/png", type="secondary", use_container_width=True)
-# =========================================
+        with col_dl1: st.download_button("📄 Laporan PDF", data=st.session_state.pdf_bytes_sdi, file_name=f"Laporan_SDI_{lokasi.replace(' ', '_')}.pdf", mime="application/pdf", type="primary", use_container_width=True)
+        with col_dl2: st.download_button("🗺️ Peta (.gpkg)", data=st.session_state.gpkg_bytes_sdi, file_name=f"Peta_SDI_{lokasi.replace(' ', '_')}.gpkg", mime="application/geopackage+sqlite3", type="secondary", use_container_width=True)
+        with col_dl3: st.download_button("📊 Data (.xlsx)", data=st.session_state.excel_bytes_sdi, file_name=f"Data_SDI_{lokasi.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", type="secondary", use_container_width=True)
+        with col_dl4: st.download_button("🖼️ Layout Peta (.png)", data=st.session_state.peta_bytes_sdi, file_name=f"Layout_A3_SDI_{lokasi.replace(' ', '_')}.png", mime="image/png", type="secondary", use_container_width=True)
 # MODUL KOMPARASI
 # =========================================
 elif menu == "📊 Komparasi (PCI vs SDI)":
@@ -1478,6 +1475,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
