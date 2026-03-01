@@ -8,7 +8,7 @@ import tempfile
 import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from shapely.ops import linemerge
+from shapely.ops import linemerge, substring
 from shapely.geometry import LineString, Polygon
 import rasterio
 from rasterstats import zonal_stats
@@ -468,7 +468,7 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                         union_geom = jalan.geometry.union_all()
                         merged_line = linemerge(union_geom) if union_geom.geom_type == "MultiLineString" else union_geom
                         panjang_total = merged_line.length
-                        segments = [LineString([merged_line.interpolate(start), merged_line.interpolate(min(start + interval_segmen, panjang_total))]) 
+                        segments = [substring(merged_line, start, min(start + interval_segmen, panjang_total)) 
                                     for start in np.arange(0, panjang_total, interval_segmen)]
                         seg_gdf = gpd.GeoDataFrame(geometry=segments, crs=jalan.crs)
                         seg_gdf["Segmen"] = range(1, len(seg_gdf)+1)
@@ -852,7 +852,7 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                         union_geom = jalan.geometry.union_all()
                         merged_line = linemerge(union_geom) if union_geom.geom_type == "MultiLineString" else union_geom
                         panjang_total = merged_line.length
-                        segments = [LineString([merged_line.interpolate(start), merged_line.interpolate(min(start + interval_segmen, panjang_total))]) 
+                        segments = [substring(merged_line, start, min(start + interval_segmen, panjang_total)) 
                                     for start in np.arange(0, panjang_total, interval_segmen)]
                         seg_gdf = gpd.GeoDataFrame(geometry=segments, crs=jalan.crs)
                         seg_gdf["Segmen"] = range(1, len(seg_gdf)+1)
@@ -1308,6 +1308,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
