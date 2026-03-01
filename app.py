@@ -144,37 +144,19 @@ def hitung_diameter_pothole(gdf):
     return gdf
 
 def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
-    with rasterio.open(dsm_path) as DSM:
-        dsm_crs = DSM.crs
-        nodata_val = DSM.nodata
-        
-    # 1. Lakukan Buffering saat GDF masih ber-CRS UTM (Meter)
-    buffer_outer = gdf.geometry.buffer(buffer_distance)
-    ring_geom = buffer_outer.difference(gdf.geometry)
-
-    # 2. Konversi/Reproject geometri hole dan ring ke CRS DSM (Apapun itu)
-    hole_geom_dsm = gdf.geometry.to_crs(dsm_crs)
-    ring_geom_dsm = ring_geom.to_crs(dsm_crs)
-
-    # 3. Zonal stats menggunakan geometri yang sudah disamakan dengan DSM
-    stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["percentile_10"], nodata=nodata_val)
-    stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val)
-
-    def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
-    #"""Menghitung kedalaman dalam milimeter (mm) untuk PCI"""
+    """Menghitung kedalaman dalam milimeter (mm) untuk PCI"""
     with rasterio.open(dsm_path) as DSM:
         dsm_crs = DSM.crs
         nodata_val = DSM.nodata
         
     buffer_outer = gdf.geometry.buffer(buffer_distance)
     ring_geom = buffer_outer.difference(gdf.geometry)
-
     hole_geom_dsm = gdf.geometry.to_crs(dsm_crs)
     ring_geom_dsm = ring_geom.to_crs(dsm_crs)
-
+    
     stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
     stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
-
+    
     depth_list = []
     for i in range(len(gdf)):
         z_hole = stats_hole[i]["median"]
@@ -194,20 +176,19 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
 
 
 def hitung_depth_cm(gdf, dsm_path, buffer_distance=0.3):
-    #"""Menghitung kedalaman dalam centimeter (cm) untuk SDI"""
+    """Menghitung kedalaman dalam centimeter (cm) untuk SDI"""
     with rasterio.open(dsm_path) as DSM:
         dsm_crs = DSM.crs
         nodata_val = DSM.nodata
         
     buffer_outer = gdf.geometry.buffer(buffer_distance)
     ring_geom = buffer_outer.difference(gdf.geometry)
-
     hole_geom_dsm = gdf.geometry.to_crs(dsm_crs)
     ring_geom_dsm = ring_geom.to_crs(dsm_crs)
-
+    
     stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
     stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
-
+    
     depth_list = []
     for i in range(len(gdf)):
         z_hole = stats_hole[i]["median"]
@@ -1249,6 +1230,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
