@@ -1192,8 +1192,9 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
                 ("Serious", "#8B0000", "white", "11 - 25"),
                 ("Failed", "#A9A9A9", "black", "0 - 10")
             ]
-            for nama, bg, txt, rentang in skala_sdi:
-                st.markdown(f"<div style='background-color: {bg}; color: {txt}; padding: 8px 12px; margin-bottom: 5px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1);'><span>{nama}</span><span>{rentang}</span></div>", unsafe_allow_html=True)
+            for nama, bg, txt, rentang in skala_pci:
+                st.markdown(f"<div style='background-color: {bg}; color: {txt}; padding: 5px 10px; margin-bottom: 2px; border-radius: 3px; display: flex; justify-content: space-between; font-size: 14px; font-weight: bold;'><span>{nama}</span><span>{rentang}</span></div>", unsafe_allow_html=True)
+        
         with col_leg2:
             st.markdown("**Urutan Surface Distress Index (SDI)**")
             skala_sdi = [
@@ -1340,6 +1341,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
