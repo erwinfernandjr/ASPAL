@@ -161,14 +161,31 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
     stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["percentile_10"], nodata=nodata_val)
     stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val)
 
+    def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
+    """Menghitung kedalaman dalam milimeter (mm) untuk PCI"""
+    with rasterio.open(dsm_path) as DSM:
+        dsm_crs = DSM.crs
+        nodata_val = DSM.nodata
+        
+    buffer_outer = gdf.geometry.buffer(buffer_distance)
+    ring_geom = buffer_outer.difference(gdf.geometry)
+
+    hole_geom_dsm = gdf.geometry.to_crs(dsm_crs)
+    ring_geom_dsm = ring_geom.to_crs(dsm_crs)
+
+    # UBAH: Gunakan 'median' untuk keduanya dan tambahkan all_touched=True
+    stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
+    stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
+
     depth_list = []
     for i in range(len(gdf)):
-        z_min = stats_hole[i]["percentile_10"]
+        z_hole = stats_hole[i]["median"]
         z_ref = stats_ring[i]["median"]
         
-        if z_min is not None and z_ref is not None:
-            depth = (z_ref - z_min) * 1000
-            depth = max(0, min(depth, 80)) # Boleh dinyalakan lagi sebagai safety net
+        if z_hole is not None and z_ref is not None:
+            # Hitung selisih rata-rata kedalaman (menghilangkan bias kemiringan jalan)
+            depth = (z_ref - z_hole) * 1000
+            depth = max(0, min(depth, 80)) # Maksimal 80mm (8cm) untuk logika PCI
         else:
             depth = 0
             
@@ -185,26 +202,25 @@ def hitung_depth_cm(gdf, dsm_path, buffer_distance=0.3):
         dsm_crs = DSM.crs
         nodata_val = DSM.nodata
         
-    # 1. Lakukan Buffering saat GDF masih ber-CRS UTM (Meter)
     buffer_outer = gdf.geometry.buffer(buffer_distance)
     ring_geom = buffer_outer.difference(gdf.geometry)
 
-    # 2. Konversi/Reproject geometri hole dan ring ke CRS DSM (Apapun itu)
     hole_geom_dsm = gdf.geometry.to_crs(dsm_crs)
     ring_geom_dsm = ring_geom.to_crs(dsm_crs)
 
-    # 3. Zonal stats menggunakan geometri yang sudah disamakan dengan DSM
-    stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["percentile_10"], nodata=nodata_val)
-    stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val)
+    # UBAH: Gunakan 'median' untuk keduanya dan tambahkan all_touched=True
+    stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
+    stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
 
     depth_list = []
     for i in range(len(gdf)):
-        z_min = stats_hole[i]["percentile_10"]
+        z_hole = stats_hole[i]["median"]
         z_ref = stats_ring[i]["median"]
         
-        if z_min is not None and z_ref is not None:
-            depth = (z_ref - z_min) * 100
-            depth = max(0, min(depth, 15)) # Boleh dinyalakan lagi sebagai safety net
+        if z_hole is not None and z_ref is not None:
+            # Hitung selisih rata-rata kedalaman
+            depth = (z_ref - z_hole) * 100
+            depth = max(0, min(depth, 15)) # Tetap dibatasi logis max 15cm
         else:
             depth = 0
             
@@ -1238,6 +1254,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
