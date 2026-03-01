@@ -880,13 +880,19 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                             if not gdf_retak.empty:
                                 retak_seg = gpd.overlay(gdf_retak, seg_poly, how="intersection")
                                 if not retak_seg.empty:
-                                    luas_retak = retak_seg.geometry.area.sum()
+                                    # --- PERBAIKAN: Melebur retak yang overlap agar tidak dihitung ganda ---
+                                    geom_retak_gabungan = retak_seg.geometry.union_all()
+                                    luas_retak = geom_retak_gabungan.area
+                                    # -----------------------------------------------------------------------
+                                    
                                     persen_retak = (luas_retak / luas_seg) * 100 if luas_seg > 0 else 0
+                                    
+                                    # Untuk perhitungan lebar, kita tetap pakai data per-poligon aslinya
                                     lengths = retak_seg.geometry.length
                                     valid_lengths = lengths[lengths > 0]
                                     if len(valid_lengths) > 0:
                                         retak_seg.loc[lengths > 0, "lebar_calc"] = retak_seg.geometry.area / valid_lengths
-                                        lebar_retak = retak_seg["lebar_calc"].mean() * 1000 
+                                        lebar_retak = retak_seg["lebar_calc"].mean() * 1000
 
                             jumlah_lubang = 0
                             if not gdf_pothole.empty:
@@ -1308,6 +1314,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
