@@ -306,34 +306,28 @@ def metric_card(label, value, value_color="#4da6ff", bg_color="#1E2A38", text_co
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import StrMethodFormatter
 import contextily as cx
 from matplotlib_scalebar.scalebar import ScaleBar
 import os
 
-def format_coord(x, pos):
-    """Fungsi pembantu untuk memformat koordinat derajat"""
-    return f"{x:.3f}°"
-
 def buat_layout_peta_a3(gdf, tipe_peta, lokasi, instansi, tanggal, surveyor, tmpdir):
     """
     Membuat layout peta A3 seperti standar QGIS/ArcGIS.
-    tipe_peta: "PCI" atau "SDI"
+    Menggunakan CRS Proyeksi (UTM) agar skala meter presisi dan error "deg" hilang.
     """
     # 1. SETUP KANVAS A3 (Lanskap)
-    # Ukuran A3 dalam inci adalah 16.53 x 11.69
     fig = plt.figure(figsize=(16.53, 11.69), facecolor='white')
     
     # 2. PEMBAGIAN RUANG (AXES)
-    # [kiri, bawah, lebar, tinggi] dalam fraksi 0-1
     ax_map = fig.add_axes([0.05, 0.05, 0.65, 0.9])      # Kanvas Peta Utama (Kiri)
     ax_side = fig.add_axes([0.72, 0.05, 0.25, 0.9])     # Kanvas Sidebar Informasi (Kanan)
     
     # ---------------------------------------------------------
     # BAGIAN A: PETA UTAMA
     # ---------------------------------------------------------
-    # Pastikan data dalam format EPSG:4326 agar grid dalam derajat (Lat/Lon)
-    gdf_plot = gdf.to_crs(epsg=4326)
+    # Gunakan CRS bawaan GDF (UTM) yang unitnya Meter.
+    gdf_plot = gdf.copy()
     
     # Warna berdasarkan PCI atau SDI
     if tipe_peta == "PCI":
@@ -351,17 +345,19 @@ def buat_layout_peta_a3(gdf, tipe_peta, lokasi, instansi, tanggal, surveyor, tmp
             subset.plot(ax=ax_map, color=warna, edgecolor="black", linewidth=2, label=kategori)
             legend_handles.append(mpatches.Patch(color=warna, label=f"{kategori}"))
             
-    # Tambahkan Basemap Satelit
+    # Tambahkan Basemap Satelit (Contextily otomatis menyesuaikan CRS)
     try:
         cx.add_basemap(ax_map, crs=gdf_plot.crs.to_string(), source=cx.providers.Esri.WorldImagery)
     except Exception as e:
         print("Gagal memuat basemap:", e)
 
-    # Grid dan Label Koordinat
-    ax_map.grid(True, linestyle='-', color='white', alpha=0.5)
-    ax_map.xaxis.set_major_formatter(FuncFormatter(format_coord))
-    ax_map.yaxis.set_major_formatter(FuncFormatter(format_coord))
-    ax_map.tick_params(axis='both', which='major', labelsize=10, rotation=0)
+    # Grid dan Label Koordinat (Sekarang formatnya Meter/UTM)
+    ax_map.grid(True, linestyle='--', color='white', alpha=0.5)
+    
+    # Format koordinat agar tidak menjadi notasi ilmiah (e.g., 1e6)
+    ax_map.xaxis.set_major_formatter(StrMethodFormatter('{x:,.0f} mE'))
+    ax_map.yaxis.set_major_formatter(StrMethodFormatter('{x:,.0f} mN'))
+    ax_map.tick_params(axis='both', which='major', labelsize=8, rotation=30)
     
     # Beri bingkai tebal pada peta utama
     for spine in ax_map.spines.values():
@@ -372,55 +368,52 @@ def buat_layout_peta_a3(gdf, tipe_peta, lokasi, instansi, tanggal, surveyor, tmp
     # ---------------------------------------------------------
     ax_side.axis('off') # Sembunyikan axis
     
-    # Gambar kotak batas luar sidebar
     rect_outer = plt.Rectangle((0, 0), 1, 1, transform=ax_side.transAxes, fill=False, linewidth=1.5)
     ax_side.add_patch(rect_outer)
     
-    # Fungsi pembantu untuk menggambar garis pemisah horizontal
     def draw_separator(y_pos):
         ax_side.plot([0, 1], [y_pos, y_pos], transform=ax_side.transAxes, color='black', linewidth=1)
 
-    # 1. KOP INSTANSI (Posisi Y: 0.95 - 0.85)
+    # 1. KOP INSTANSI
     ax_side.text(0.5, 0.92, instansi.upper(), transform=ax_side.transAxes, ha='center', va='center', fontsize=12, fontweight='bold', wrap=True)
     draw_separator(0.85)
     
-    # 2. JUDUL PETA (Posisi Y: 0.85 - 0.75)
-    judul = f"PETA KONDISI PERKERASAN JALAN ({tipe_peta})"
+    # 2. JUDUL PETA
+    judul = f"PETA KONDISI PERKERASAN JALAN\n(Metode {tipe_peta})"
     ax_side.text(0.5, 0.80, judul, transform=ax_side.transAxes, ha='center', va='center', fontsize=14, fontweight='bold', wrap=True)
     ax_side.text(0.5, 0.76, f"Lokasi: {lokasi}", transform=ax_side.transAxes, ha='center', va='center', fontsize=11)
     draw_separator(0.74)
     
-    # 3. ARAH UTARA & SKALA (Posisi Y: 0.74 - 0.60)
+    # 3. ARAH UTARA & SKALA
     ax_side.text(0.1, 0.68, "U\n▲", transform=ax_side.transAxes, ha='center', va='center', fontsize=24, fontweight='bold')
     
-    # Tambahkan Scalebar menggunakan library matplotlib-scalebar
-    # Karena EPSG:4326 dalam derajat, kita hitung aproksimasi atau gunakan crs meter untuk akurasi
-    scalebar = ScaleBar(dx=1, units="deg", location="lower center", box_alpha=0) 
+    # PERBAIKAN SCALEBAR: Sekarang unit peta adalah Meter (dx=1)
+    scalebar = ScaleBar(dx=1, units="m", location="lower center", box_alpha=0) 
     ax_side.add_artist(scalebar)
     
-    sistem_grid = f"Sistem Grid : Geographic\nDatum : WGS 1984\nSkala : Menyesuaikan Kertas A3"
+    # Update teks sistem grid
+    sistem_grid = f"Sistem Grid : UTM\nDatum : WGS 1984\nSkala : Menyesuaikan (A3)"
     ax_side.text(0.3, 0.65, sistem_grid, transform=ax_side.transAxes, ha='left', va='center', fontsize=9)
     draw_separator(0.58)
     
-    # 4. INSET PETA (Area kosong untuk dimasukkan axis inset nanti, Y: 0.58 - 0.35)
+    # 4. INSET PETA (Placeholder)
     ax_side.text(0.5, 0.56, "PETA INSET", transform=ax_side.transAxes, ha='center', va='center', fontsize=10, fontweight='bold')
-    # (Opsional) Buat axes baru di atas koordinat ini untuk plot peta provinsi
     inset_ax = fig.add_axes([0.75, 0.38, 0.19, 0.15])
     inset_ax.set_xticks([]); inset_ax.set_yticks([])
     inset_ax.text(0.5, 0.5, "Inset Map\n(Data Provinsi)", ha='center', va='center', color='gray')
     draw_separator(0.35)
     
-    # 5. LEGENDA (Posisi Y: 0.35 - 0.20)
+    # 5. LEGENDA
     ax_side.text(0.5, 0.33, "LEGENDA", transform=ax_side.transAxes, ha='center', va='center', fontsize=12, fontweight='bold')
-    ax_side.legend(handles=legend_handles, loc='center', bbox_to_anchor=(0.5, 0.25), frameon=False, fontsize=10, ncol=1)
-    draw_separator(0.18)
+    ax_side.legend(handles=legend_handles, loc='center', bbox_to_anchor=(0.5, 0.23), frameon=False, fontsize=10, ncol=1)
+    draw_separator(0.16)
     
-    # 6. DIBUAT OLEH (Posisi Y: 0.18 - 0.08)
-    ax_side.text(0.5, 0.15, "Dibuat Oleh:", transform=ax_side.transAxes, ha='center', va='center', fontsize=10, fontweight='bold')
-    ax_side.text(0.5, 0.11, surveyor, transform=ax_side.transAxes, ha='center', va='center', fontsize=10)
+    # 6. DIBUAT OLEH
+    ax_side.text(0.5, 0.13, "Dibuat Oleh:", transform=ax_side.transAxes, ha='center', va='center', fontsize=10, fontweight='bold')
+    ax_side.text(0.5, 0.10, surveyor, transform=ax_side.transAxes, ha='center', va='center', fontsize=10)
     draw_separator(0.08)
     
-    # 7. SUMBER DATA (Posisi Y: 0.08 - 0.0)
+    # 7. SUMBER DATA
     sumber_teks = f"Sumber Data:\n1. Survei Lapangan ({tanggal})\n2. Citra Satelit Esri World Imagery"
     ax_side.text(0.05, 0.04, sumber_teks, transform=ax_side.transAxes, ha='left', va='center', fontsize=8)
 
@@ -1483,6 +1476,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
