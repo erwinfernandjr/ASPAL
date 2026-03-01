@@ -746,7 +746,7 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                 
                 folium.GeoJson(
                     distress_map, 
-                    name="Data Kerusakan Asli",
+                    name="Data Kerusakan",
                     style_function=lambda x: {'color': '#e74c3c', 'fillColor': '#e74c3c', 'weight': 2, 'fillOpacity': 0.6},
                     tooltip=folium.features.GeoJsonTooltip(fields=['Distress_Type', 'Severity'])
                 ).add_to(m)
@@ -1308,6 +1308,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
