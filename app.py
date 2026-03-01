@@ -43,8 +43,7 @@ if 'pdf_bytes_pci' not in st.session_state: st.session_state.pdf_bytes_pci = Non
 if 'gpkg_bytes_pci' not in st.session_state: st.session_state.gpkg_bytes_pci = None   
 if 'seg_gdf_pci' not in st.session_state: st.session_state.seg_gdf_pci = None
 if 'excel_bytes_pci' not in st.session_state: st.session_state.excel_bytes_pci = None
-if 'master_distress_pci' not in st.session_state: st.session_state.master_distress_pci = None
-    
+
 # State untuk SDI
 if 'sdi_selesai' not in st.session_state: st.session_state.sdi_selesai = False
 if 'df_sdi' not in st.session_state: st.session_state.df_sdi = None
@@ -54,9 +53,7 @@ if 'pdf_bytes_sdi' not in st.session_state: st.session_state.pdf_bytes_sdi = Non
 if 'gpkg_bytes_sdi' not in st.session_state: st.session_state.gpkg_bytes_sdi = None   
 if 'seg_gdf_sdi' not in st.session_state: st.session_state.seg_gdf_sdi = None
 if 'excel_bytes_sdi' not in st.session_state: st.session_state.excel_bytes_sdi = None
-if 'gdf_retak_sdi' not in st.session_state: st.session_state.gdf_retak_sdi = None
-if 'gdf_pothole_sdi' not in st.session_state: st.session_state.gdf_pothole_sdi = None
-if 'gdf_rutting_sdi' not in st.session_state: st.session_state.gdf_rutting_sdi = None
+
 
 # ==========================================================
 # 3. DATABASE KURVA PCI (STANDAR POLINOMIAL ASTM)
@@ -522,7 +519,6 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                                 cleaned_layers.append(gdf)
                             master_distress = gpd.GeoDataFrame(pd.concat(cleaned_layers, ignore_index=True), crs=seg_gdf.crs)
                             master_distress = master_distress.sort_values(by="Priority", ascending=False).reset_index(drop=True)
-                            st.session_state.master_distress_pci = master_distress.copy()
                         
                             accumulated_geom = Polygon()
                             cleaned_geometries = []
@@ -534,8 +530,6 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                             master_distress["geometry"] = cleaned_geometries
                             master_distress = master_distress[~master_distress.geometry.is_empty]
                             inter_all = gpd.overlay(master_distress, seg_gdf, how="intersection")
-
-                            st.session_state.master_distress_pci = inter_all.copy()
                         
                             if not inter_all.empty:
                                 inter_all["Area_Intersect"] = inter_all.geometry.area
@@ -725,24 +719,9 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
             st.subheader("🗺️ Peta Kondisi PCI")
             map_gdf = st.session_state.seg_gdf_pci.to_crs(epsg=4326)
             m = folium.Map(location=[map_gdf.geometry.centroid.y.mean(), map_gdf.geometry.centroid.x.mean()], zoom_start=15)
-            
-            # 1. Base Layer: Kotak Segmen Jalan (Tetap tegas dan rapi)
             warna_pci_dict = {"Good": "#006400", "Satisfactory": "#8FBC8F", "Fair": "#FFFF00", "Poor": "#FF6347", "Very Poor": "#FF4500", "Serious": "#8B0000", "Failed": "#A9A9A9"}
-            folium.GeoJson(map_gdf, name="Segmen Jalan (PCI)",
-                           style_function=lambda f: {'fillColor': warna_pci_dict.get(f['properties']['Rating'], "#000"), 'color': 'black', 'weight': 1, 'fillOpacity': 0.8},
+            folium.GeoJson(map_gdf, style_function=lambda f: {'fillColor': warna_pci_dict.get(f['properties']['Rating'], "#000"), 'color': 'black', 'weight': 1, 'fillOpacity': 0.8},
                            tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'STA', 'PCI', 'Rating'])).add_to(m)
-            
-            # 2. Overlay Layer: Kerusakan (Yang sudah rapi mengikuti batas segmen)
-            if 'master_distress_pci' in st.session_state and st.session_state.master_distress_pci is not None and not st.session_state.master_distress_pci.empty:
-                distress_map = st.session_state.master_distress_pci.to_crs(epsg=4326)
-                folium.GeoJson(
-                    distress_map, 
-                    name="Kerusakan (Clipped)",
-                    style_function=lambda x: {'color': '#e74c3c', 'fillColor': '#e74c3c', 'weight': 1, 'fillOpacity': 0.6},
-                    tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'Distress_Type', 'Severity'])
-                ).add_to(m)
-                
-            folium.LayerControl().add_to(m)
             st_folium(m, use_container_width=True, height=400)
         with col_res2:
             st.subheader("Distribusi")
@@ -995,23 +974,12 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                         
                         st.session_state.df_sdi = df_sdi
                         st.session_state.seg_gdf_sdi = seg_gdf           
-                        
-                        # --- TAMBAHAN CLIPPING OVERLAY SDI ---
-                        st.session_state.gdf_retak_sdi = gpd.overlay(gdf_retak, seg_gdf, how="intersection") if not gdf_retak.empty else None
-                        st.session_state.gdf_pothole_sdi = gpd.overlay(gdf_pothole, seg_gdf, how="intersection") if not gdf_pothole.empty else None
-                        st.session_state.gdf_rutting_sdi = gpd.overlay(gdf_rutting, seg_gdf, how="intersection") if not gdf_rutting.empty else None
-                        # ---------------------------------------
-                        
-                        st.session_state.excel_bytes_sdi = excel_buffer.getvalue()
+                        st.session_state.excel_bytes_sdi = excel_buffer.getvalue()   
                         with open(peta_path, "rb") as f: st.session_state.peta_bytes_sdi = f.read()
                         with open(grafik_path, "rb") as f: st.session_state.grafik_bytes_sdi = f.read()
                         with open(pdf_path, "rb") as f: st.session_state.pdf_bytes_sdi = f.read()
                         with open(gpkg_path, "rb") as f: st.session_state.gpkg_bytes_sdi = f.read()       
                             
-                        st.session_state.gdf_retak_sdi = gdf_retak.copy()
-                        st.session_state.gdf_pothole_sdi = gdf_pothole.copy()
-                        st.session_state.gdf_rutting_sdi = gdf_rutting.copy()
-                        
                         st.session_state.sdi_selesai = True
 
                     except Exception as e: st.error(f"❌ Terjadi kesalahan: {e}"); st.session_state.sdi_selesai = False
@@ -1023,27 +991,9 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
             st.subheader("🗺️ Peta Kondisi SDI")
             map_gdf = st.session_state.seg_gdf_sdi.to_crs(epsg=4326)
             m = folium.Map(location=[map_gdf.geometry.centroid.y.mean(), map_gdf.geometry.centroid.x.mean()], zoom_start=15)
-            
-            # 1. Base Layer: Kotak Segmen Jalan
             warna_kondisi_dict = {"Baik": "#2ecc71", "Sedang": "#f1c40f", "Rusak Ringan": "#e67e22", "Rusak Berat": "#e74c3c"}
-            folium.GeoJson(map_gdf, name="Segmen Jalan (SDI)",
-                           style_function=lambda f: {'fillColor': warna_kondisi_dict.get(f['properties']['Kondisi'], "#000"), 'color': 'black', 'weight': 1, 'fillOpacity': 0.8},
+            folium.GeoJson(map_gdf, style_function=lambda f: {'fillColor': warna_kondisi_dict.get(f['properties']['Kondisi'], "#000"), 'color': 'black', 'weight': 1, 'fillOpacity': 0.8},
                            tooltip=folium.features.GeoJsonTooltip(fields=['Segmen', 'STA', 'SDI', 'Kondisi'])).add_to(m)
-            
-            # 2. Overlay Kerusakan (Clipped agar tidak lubèr keluar jalan)
-            if 'gdf_retak_sdi' in st.session_state and st.session_state.gdf_retak_sdi is not None and not st.session_state.gdf_retak_sdi.empty:
-                folium.GeoJson(st.session_state.gdf_retak_sdi.to_crs(epsg=4326), name="Retak", 
-                               style_function=lambda x: {'color': '#e74c3c', 'weight': 2}).add_to(m)
-            
-            if 'gdf_pothole_sdi' in st.session_state and st.session_state.gdf_pothole_sdi is not None and not st.session_state.gdf_pothole_sdi.empty:
-                folium.GeoJson(st.session_state.gdf_pothole_sdi.to_crs(epsg=4326), name="Lubang", 
-                               style_function=lambda x: {'color': '#3498db', 'fillColor': '#3498db', 'weight': 1, 'fillOpacity': 0.6}).add_to(m)
-                               
-            if 'gdf_rutting_sdi' in st.session_state and st.session_state.gdf_rutting_sdi is not None and not st.session_state.gdf_rutting_sdi.empty:
-                folium.GeoJson(st.session_state.gdf_rutting_sdi.to_crs(epsg=4326), name="Rutting", 
-                               style_function=lambda x: {'color': '#9b59b6', 'fillColor': '#9b59b6', 'weight': 1, 'fillOpacity': 0.6}).add_to(m)
-
-            folium.LayerControl().add_to(m)
             st_folium(m, use_container_width=True, height=400)
         with col_res2:
             st.subheader("Distribusi")
@@ -1298,9 +1248,6 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
-
-
-
 
 
 
