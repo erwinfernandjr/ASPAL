@@ -752,7 +752,7 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                 ).add_to(m)
                 
             folium.LayerControl().add_to(m)
-            st_folium(m, use_container_width=True, height=400)
+            st_folium(m, use_container_width=True, height=600)
         with col_res2:
             st.subheader("Distribusi")
             st.image(st.session_state.grafik_bytes_pci)
@@ -1075,7 +1075,7 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                 folium.GeoJson(clean_rutting, name="Rutting", style_function=lambda x: {'color': '#9b59b6', 'fillColor': '#9b59b6', 'weight': 2, 'fillOpacity': 0.6}).add_to(m)
 
             folium.LayerControl().add_to(m)
-            st_folium(m, use_container_width=True, height=400)
+            st_folium(m, use_container_width=True, height=600)
         with col_res2:
             st.subheader("Distribusi")
             st.image(st.session_state.grafik_bytes_sdi)
@@ -1341,6 +1341,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
