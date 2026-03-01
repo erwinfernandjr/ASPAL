@@ -172,7 +172,6 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
     hole_geom_dsm = gdf.geometry.to_crs(dsm_crs)
     ring_geom_dsm = ring_geom.to_crs(dsm_crs)
 
-    # Menggunakan 'median' & all_touched=True untuk menghilangkan bias kemiringan jalan
     stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
     stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
 
@@ -183,7 +182,7 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
         
         if z_hole is not None and z_ref is not None:
             depth = (z_ref - z_hole) * 1000
-            depth = max(0, min(depth, 80)) # Maksimal 8cm untuk standar PCI
+            depth = max(0, min(depth, 80))
         else:
             depth = 0
             
@@ -206,7 +205,6 @@ def hitung_depth_cm(gdf, dsm_path, buffer_distance=0.3):
     hole_geom_dsm = gdf.geometry.to_crs(dsm_crs)
     ring_geom_dsm = ring_geom.to_crs(dsm_crs)
 
-    # Menggunakan 'median' & all_touched=True untuk menghilangkan bias kemiringan jalan
     stats_hole = zonal_stats(hole_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
     stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val, all_touched=True)
 
@@ -217,7 +215,7 @@ def hitung_depth_cm(gdf, dsm_path, buffer_distance=0.3):
         
         if z_hole is not None and z_ref is not None:
             depth = (z_ref - z_hole) * 100
-            depth = max(0, min(depth, 15)) # Maksimal 15cm
+            depth = max(0, min(depth, 15))
         else:
             depth = 0
             
@@ -1251,6 +1249,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
