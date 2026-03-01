@@ -728,6 +728,15 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
             st.image(st.session_state.grafik_bytes_pci)
             st.metric("Rata-rata PCI", round(st.session_state.df_pci["PCI"].mean(), 2))
         
+        # --- TABEL REKAP KESELURUHAN PCI ---
+        st.markdown("---")
+        st.subheader("📋 Tabel Rekapitulasi Keseluruhan (PCI)")
+        st.caption("Klik pada header kolom (misal: 'Skor PCI') untuk mengurutkan data dari nilai tertinggi ke terendah atau sebaliknya.")
+        df_pci_display = st.session_state.df_pci[['Segmen', 'STA', 'PCI', 'Rating']].copy()
+        df_pci_display.columns = ['Segmen', 'STA', 'Skor PCI', 'Kelas Kerusakan']
+        st.dataframe(df_pci_display, use_container_width=True, hide_index=True)
+        # -----------------------------------
+
         # DASHBOARD PER SEGMEN (PCI)
         st.markdown("---")
         st.subheader("🔎 Dashboard Detail Per Segmen (PCI)")
@@ -991,6 +1000,15 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
             st.image(st.session_state.grafik_bytes_sdi)
             st.metric("Rata-rata Nilai SDI", round(st.session_state.df_sdi["SDI"].mean(), 2))
         
+        # --- TABEL REKAP KESELURUHAN SDI ---
+        st.markdown("---")
+        st.subheader("📋 Tabel Rekapitulasi Keseluruhan (SDI)")
+        st.caption("Klik pada header kolom (misal: 'Skor SDI') untuk mengurutkan data dari nilai tertinggi ke terendah atau sebaliknya.")
+        df_sdi_display = st.session_state.df_sdi[['Segmen', 'STA', 'SDI', 'Kondisi']].copy()
+        df_sdi_display.columns = ['Segmen', 'STA', 'Skor SDI', 'Kelas Kerusakan']
+        st.dataframe(df_sdi_display, use_container_width=True, hide_index=True)
+        # -----------------------------------
+
         # DASHBOARD PER SEGMEN (SDI)
         st.markdown("---")
         st.subheader("🔎 Dashboard Detail Perhitungan Segmen (SDI)")
@@ -1230,6 +1248,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
