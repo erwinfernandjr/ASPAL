@@ -757,6 +757,22 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
             st.subheader("Distribusi")
             st.image(st.session_state.grafik_bytes_pci)
             st.metric("Rata-rata PCI", round(st.session_state.df_pci["PCI"].mean(), 2))
+            
+            # --- TAMBAHAN LEGENDA PCI ---
+            st.markdown("---")
+            st.markdown("##### 📖 Legenda PCI")
+            skala_pci = [
+                ("Good", "#006400", "white", "86 - 100"),
+                ("Satisfactory", "#8FBC8F", "black", "71 - 85"),
+                ("Fair", "#FFFF00", "black", "56 - 70"),
+                ("Poor", "#FF6347", "white", "41 - 55"),
+                ("Very Poor", "#FF4500", "white", "26 - 40"),
+                ("Serious", "#8B0000", "white", "11 - 25"),
+                ("Failed", "#A9A9A9", "black", "0 - 10")
+            ]
+            for nama, bg, txt, rentang in skala_pci:
+                st.markdown(f"<div style='background-color: {bg}; color: {txt}; padding: 5px 10px; margin-bottom: 2px; border-radius: 3px; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;'><span>{nama}</span><span>{rentang}</span></div>", unsafe_allow_html=True)
+            # ---------------------------
         
         # --- TABEL REKAP KESELURUHAN PCI ---
         st.markdown("---")
@@ -1065,6 +1081,19 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
             st.subheader("Distribusi")
             st.image(st.session_state.grafik_bytes_sdi)
             st.metric("Rata-rata Nilai SDI", round(st.session_state.df_sdi["SDI"].mean(), 2))
+            
+            # --- TAMBAHAN LEGENDA SDI ---
+            st.markdown("---")
+            st.markdown("##### 📖 Legenda SDI")
+            skala_sdi = [
+                ("Baik", "#2ecc71", "white", "< 50"),
+                ("Sedang", "#f1c40f", "black", "50 - 100"),
+                ("Rusak Ringan", "#e67e22", "white", "101 - 150"),
+                ("Rusak Berat", "#e74c3c", "white", "> 150")
+            ]
+            for nama, bg, txt, rentang in skala_sdi:
+                st.markdown(f"<div style='background-color: {bg}; color: {txt}; padding: 5px 10px; margin-bottom: 2px; border-radius: 3px; display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;'><span>{nama}</span><span>{rentang}</span></div>", unsafe_allow_html=True)
+            # ---------------------------    
         
         # --- TABEL REKAP KESELURUHAN SDI ---
         st.markdown("---")
@@ -1314,6 +1343,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
