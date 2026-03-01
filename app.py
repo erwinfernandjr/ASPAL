@@ -160,7 +160,7 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
         z_min = stats_hole[i]["percentile_10"]
         z_ref = stats_ring[i]["median"]
         depth = (z_ref - z_min) * 1000 if (z_min is not None and z_ref is not None) else 0
-        depth = max(0, min(depth, 80))
+        #depth = max(0, min(depth, 80))
         depth_list.append(depth)
     gdf = gdf.copy()
     gdf["DEPTH_MM"] = depth_list
@@ -183,7 +183,7 @@ def hitung_depth_cm(gdf, dsm_path, buffer_distance=0.3):
         z_min = stats_hole[i]["percentile_10"]
         z_ref = stats_ring[i]["median"]
         depth = (z_ref - z_min) * 100 if (z_min is not None and z_ref is not None) else 0
-        depth = max(0, min(depth, 15)) 
+        #depth = max(0, min(depth, 15)) 
         depth_list.append(depth)
     gdf = gdf.copy()
     gdf["kedalaman_calc"] = depth_list
@@ -1213,6 +1213,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
