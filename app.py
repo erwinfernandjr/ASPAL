@@ -617,25 +617,22 @@ elif menu == "📈 Modul PCI (Pavement Condition Index)":
                         elements.append(Paragraph("<b>2. Grafik Distribusi PCI</b>", styles["Heading2"]))
                         elements.append(Image(grafik_path, width=6.5*inch, height=3.5*inch)); elements.append(PageBreak())
                         elements.append(Paragraph("<b>3. Peta Kondisi Jalan</b>", styles["Heading2"]))
-
-# --- MENCEGAH PETA MELAR (ASPECT RATIO FIX) ---
-img_reader = ImageReader(peta_path)
-img_w, img_h = img_reader.getSize()
-aspect = img_h / float(img_w)
-
-max_w = 9.5 * inch
-max_h = 5.5 * inch
-
-# Tentukan dimensi akhir dengan mempertahankan proporsi
-if max_w * aspect <= max_h:
-    final_w = max_w
-    final_h = max_w * aspect
-else:
-    final_h = max_h
-    final_w = max_h / aspect
-    
-elements.append(Image(peta_path, width=final_w, height=final_h))
-elements.append(PageBreak())
+                        
+                        img_reader = ImageReader(peta_path)
+                        img_w, img_h = img_reader.getSize()
+                        aspect = img_h / float(img_w)
+                        max_w = 9.5 * inch
+                        max_h = 5.5 * inch
+                        
+                        if max_w * aspect <= max_h:
+                            final_w = max_w
+                            final_h = max_w * aspect
+                        else:
+                            final_h = max_h
+                            final_w = max_h / aspect
+                            
+                        elements.append(Image(peta_path, width=final_w, height=final_h))
+                        elements.append(PageBreak())
 
                         elements.append(Paragraph("<b>LAMPIRAN: KERTAS KERJA PER SEGMEN</b>", styles["Heading1"]))
                         COLOR_HEADER_BG = colors.HexColor("#1e293b"); COLOR_HEADER_TXT = colors.white; COLOR_CELL_BG = colors.HexColor("#f8fafc")
@@ -904,28 +901,24 @@ elif menu == "📉 Modul SDI (Surface Distress Index)":
                         elements.append(ringkasan_table); elements.append(Spacer(1, 0.3 * inch))
 
                         elements.append(Paragraph("<b>2. Visualisasi Kondisi Jalan</b>", styles["Heading2"]))
-
-# --- MENCEGAH PETA MELAR (ASPECT RATIO FIX) ---
-img_reader_sdi = ImageReader(peta_path)
-img_w_sdi, img_h_sdi = img_reader_sdi.getSize()
-aspect_sdi = img_h_sdi / float(img_w_sdi)
-
-max_w_sdi = 7.5 * inch
-max_h_sdi = 4.5 * inch
-
-if max_w_sdi * aspect_sdi <= max_h_sdi:
-    final_w_sdi = max_w_sdi
-    final_h_sdi = max_w_sdi * aspect_sdi
-else:
-    final_h_sdi = max_h_sdi
-    final_w_sdi = max_h_sdi / aspect_sdi
-    
-elements.append(Image(peta_path, width=final_w_sdi, height=final_h_sdi))
-elements.append(Spacer(1, 0.2 * inch))
-
-# (Opsional) Untuk grafik bar biarkan fix ukurannya karena bentuknya kotak standar
-elements.append(Image(grafik_path, width=4.5*inch, height=3*inch))
-elements.append(PageBreak())
+                        
+                        img_reader_sdi = ImageReader(peta_path)
+                        img_w_sdi, img_h_sdi = img_reader_sdi.getSize()
+                        aspect_sdi = img_h_sdi / float(img_w_sdi)
+                        max_w_sdi = 7.5 * inch
+                        max_h_sdi = 4.5 * inch
+                        
+                        if max_w_sdi * aspect_sdi <= max_h_sdi:
+                            final_w_sdi = max_w_sdi
+                            final_h_sdi = max_w_sdi * aspect_sdi
+                        else:
+                            final_h_sdi = max_h_sdi
+                            final_w_sdi = max_h_sdi / aspect_sdi
+                            
+                        elements.append(Image(peta_path, width=final_w_sdi, height=final_h_sdi))
+                        elements.append(Spacer(1, 0.2 * inch))
+                        elements.append(Image(grafik_path, width=4.5*inch, height=3*inch))
+                        elements.append(PageBreak())
 
                         elements.append(Paragraph("<b>3. Data Kerusakan Terukur Per Segmen</b>", styles["Heading2"]))
                         tabel1_data = [["Segmen", "STA", "% Retak", "Lebar Retak\n(mm)", "Jumlah\nLubang", "Rutting\n(cm)"]]
@@ -1220,6 +1213,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
