@@ -144,7 +144,6 @@ def hitung_diameter_pothole(gdf):
     return gdf
 
 def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
-    """Menghitung kedalaman dalam milimeter (mm) untuk PCI"""
     with rasterio.open(dsm_path) as DSM:
         dsm_crs = DSM.crs
         nodata_val = DSM.nodata
@@ -1254,6 +1253,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
