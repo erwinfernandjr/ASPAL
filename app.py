@@ -161,7 +161,6 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
     stats_ring = zonal_stats(ring_geom_dsm, dsm_path, stats=["median"], nodata=nodata_val)
 
     def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
-    """Menghitung kedalaman dalam milimeter (mm) untuk PCI"""
     with rasterio.open(dsm_path) as DSM:
         dsm_crs = DSM.crs
         nodata_val = DSM.nodata
@@ -196,7 +195,6 @@ def hitung_depth(gdf, dsm_path, buffer_distance=0.3):
 
 
 def hitung_depth_cm(gdf, dsm_path, buffer_distance=0.3):
-    """Menghitung kedalaman dalam centimeter (cm) untuk SDI"""
     with rasterio.open(dsm_path) as DSM:
         dsm_crs = DSM.crs
         nodata_val = DSM.nodata
@@ -1253,6 +1251,7 @@ elif menu == "📊 Komparasi (PCI vs SDI)":
 
     else:
         st.warning("⚠️ Data belum lengkap. Silakan jalankan simulasi pada menu **Modul PCI** dan **Modul SDI** terlebih dahulu agar Dashboard Komparasi dapat ditampilkan.")
+
 
 
 
